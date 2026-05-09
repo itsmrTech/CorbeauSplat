@@ -111,8 +111,11 @@ if [ -d ".git" ]; then
     
     if git rev-parse --abbrev-ref --symbolic-full-name @{u} > /dev/null 2>&1; then
         BEHIND_COUNT=$(git rev-list --count HEAD..@{u})
-        
-        if [ "$BEHIND_COUNT" -gt 0 ]; then
+        AHEAD_COUNT=$(git rev-list --count @{u}..HEAD)
+
+        if [ "$AHEAD_COUNT" -gt 0 ]; then
+            echo "ℹ️  Local version is ahead of GitHub ($AHEAD_COUNT commit(s)). No update applied."
+        elif [ "$BEHIND_COUNT" -gt 0 ]; then
              echo ">>> A new version is available ($BEHIND_COUNT commits behind)."
              read -p ">>> Would you like to update now? (y/n) " -n 1 -r
              echo
