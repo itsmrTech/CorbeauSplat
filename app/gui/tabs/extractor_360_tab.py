@@ -228,11 +228,12 @@ class Extractor360Tab(QWidget):
         self.progress_bar.setVisible(True)
         
         from app.gui.workers import Extractor360Worker
-        self.extract_worker = Extractor360Worker()
-        self.extract_worker.engine = self.engine
-        self.extract_worker.input_path = input_path
-        self.extract_worker.output_path = output_dir
-        self.extract_worker.params = self.get_params()
+        self.extract_worker = Extractor360Worker(
+            input_path=input_path,
+            output_path=output_dir,
+            params=self.get_params(),
+            engine=self.engine
+        )
         
         self.extract_worker.progress_signal.connect(self.progress_bar.setValue)
         self.extract_worker.finished_signal.connect(self.on_extraction_finished)
