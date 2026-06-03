@@ -115,24 +115,28 @@ def test_match_gpu_streams_adds_parallel_gpu_index():
     engine, captured = _make_engine("exhaustive", match_gpu_streams=3)
     engine.feature_matching("/tmp/db.db")
     cmd = captured["cmd"]
-    assert cmd[cmd.index("--SiftMatching.use_gpu") + 1] == "1"
-    assert cmd[cmd.index("--SiftMatching.gpu_index") + 1] == "0,0,0"
+    assert cmd[cmd.index("--FeatureMatching.use_gpu") + 1] == "1"
+    assert cmd[cmd.index("--FeatureMatching.gpu_index") + 1] == "0,0,0"
+    # Regression guard: these are FeatureMatching options, NOT SiftMatching
+    # (COLMAP rejects --SiftMatching.use_gpu / --SiftMatching.gpu_index).
+    assert "--SiftMatching.use_gpu" not in cmd
+    assert "--SiftMatching.gpu_index" not in cmd
 
 
 def test_single_stream_omits_gpu_index():
     engine, captured = _make_engine("exhaustive", match_gpu_streams=1)
     engine.feature_matching("/tmp/db.db")
     cmd = captured["cmd"]
-    assert "--SiftMatching.gpu_index" not in cmd
-    assert cmd[cmd.index("--SiftMatching.use_gpu") + 1] == "1"
+    assert "--FeatureMatching.gpu_index" not in cmd
+    assert cmd[cmd.index("--FeatureMatching.use_gpu") + 1] == "1"
 
 
 def test_force_cpu_disables_gpu_and_streams():
     engine, captured = _make_engine("exhaustive", match_gpu_streams=4, force_cpu=True)
     engine.feature_matching("/tmp/db.db")
     cmd = captured["cmd"]
-    assert cmd[cmd.index("--SiftMatching.use_gpu") + 1] == "0"
-    assert "--SiftMatching.gpu_index" not in cmd
+    assert cmd[cmd.index("--FeatureMatching.use_gpu") + 1] == "0"
+    assert "--FeatureMatching.gpu_index" not in cmd
 
 
 def test_matching_uses_all_cores():
