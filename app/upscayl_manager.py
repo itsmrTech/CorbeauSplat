@@ -217,14 +217,14 @@ def run_upscayl(input_path, output_path, params,
 
     binary = params.get("bin_path") or find_binary()
     if not binary or not os.access(str(binary), os.X_OK):
-        _log("❌ upscayl-bin introuvable ou non exécutable.")
+        _log("❌ upscayl-bin not found or not executable.")
         if done_callback:
             done_callback(False)
         return
 
     model_id = params.get("model_id", "")
     if not model_id:
-        _log("❌ Aucun modèle upscayl sélectionné.")
+        _log("❌ No upscayl model selected.")
         if done_callback:
             done_callback(False)
         return
@@ -234,7 +234,7 @@ def run_upscayl(input_path, output_path, params,
         models_dir = Path(models_dir)
         if not (models_dir / f"{model_id}.bin").exists() or \
                 not (models_dir / f"{model_id}.param").exists():
-            _log(f"❌ Modèle introuvable : {model_id} (.bin/.param manquant dans {models_dir})")
+            _log(f"❌ Model not found: {model_id} (.bin/.param missing in {models_dir})")
             if done_callback:
                 done_callback(False)
             return
@@ -273,15 +273,15 @@ def run_upscayl(input_path, output_path, params,
         for line in proc.stdout:
             if cancel_check and cancel_check():
                 proc.terminate()
-                _log("⚠ Upscale interrompu par l'utilisateur.")
+                _log("⚠ Upscale cancelled by user.")
                 break
             _log(line.rstrip())
         proc.wait()
         success = (proc.returncode == 0) and not (cancel_check and cancel_check())
         if proc.returncode != 0 and not (cancel_check and cancel_check()):
-            _log(f"❌ upscayl-bin a retourné le code {proc.returncode}")
+            _log(f"❌ upscayl-bin returned code {proc.returncode}")
     except Exception as e:
-        _log(f"❌ Exception upscayl : {e}")
+        _log(f"❌ upscayl exception: {e}")
 
     if done_callback:
         done_callback(success)

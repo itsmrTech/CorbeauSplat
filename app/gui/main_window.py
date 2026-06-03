@@ -351,9 +351,9 @@ class ColmapGUI(QMainWindow):
                     self.logs_tab.append_log(f"Dataset deleted: {target_path}")
                     QMessageBox.information(self, tr("msg_success"), msg)
                 else:
-                    QMessageBox.critical(self, tr("msg_error"), f"Erreur: {msg}")
+                    QMessageBox.critical(self, tr("msg_error"), f"Error: {msg}")
             except Exception as e:
-                QMessageBox.critical(self, tr("msg_error"), f"Impossible de supprimer le dataset:\n{str(e)}")
+                QMessageBox.critical(self, tr("msg_error"), f"Could not delete the dataset:\n{str(e)}")
                 
     def train_brush(self, force_auto=False):
         """Lance l'entrainement Brush"""
@@ -365,12 +365,12 @@ class ColmapGUI(QMainWindow):
             input_path_str = brush_params.get("input_path")
             
             if not input_path_str:
-                 QMessageBox.critical(self, tr("msg_error"), "Veuillez selectionner un dossier Dataset valide.")
+                 QMessageBox.critical(self, tr("msg_error"), "Please select a valid Dataset folder.")
                  return
                  
             input_path = Path(input_path_str)
             if not input_path.exists():
-                 QMessageBox.critical(self, tr("msg_error"), "Veuillez selectionner un dossier Dataset valide.")
+                 QMessageBox.critical(self, tr("msg_error"), "Please select a valid Dataset folder.")
                  return
 
             # Use custom output path if provided, otherwise default to input/checkpoints
@@ -386,19 +386,19 @@ class ColmapGUI(QMainWindow):
             colmap_out_root_str = self.config_tab.get_output_path()
             
             if not colmap_out_root_str:
-                 QMessageBox.critical(self, tr("msg_error"), "Le dossier de sortie racine n'existe pas.")
+                 QMessageBox.critical(self, tr("msg_error"), "The root output folder does not exist.")
                  return
             
             colmap_out_root = Path(colmap_out_root_str)
             if not colmap_out_root.exists():
-                 QMessageBox.critical(self, tr("msg_error"), "Le dossier de sortie racine n'existe pas.")
+                 QMessageBox.critical(self, tr("msg_error"), "The root output folder does not exist.")
                  return
                  
             # Le dataset est dans root/project_name
             dataset_path = colmap_out_root / project_name
             
             if not dataset_path.exists():
-                QMessageBox.critical(self, tr("msg_error"), f"Le dossier du projet n'existe pas:\n{dataset_path}\nAvez-vous lancé la création du dataset ?")
+                QMessageBox.critical(self, tr("msg_error"), f"Project folder not found:\n{dataset_path}\nHave you run dataset creation?")
                 return
                 
             input_path = dataset_path
@@ -428,7 +428,7 @@ class ColmapGUI(QMainWindow):
         """Arrête Brush"""
         if hasattr(self, 'brush_worker') and self.brush_worker and self.brush_worker.isRunning():
             self.brush_worker.stop()
-            self.logs_tab.append_log("Arrêt de Brush demandé...")
+            self.logs_tab.append_log("Brush stop requested...")
 
     def on_brush_finished(self, success, message):
         """Fin entrainement Brush"""
@@ -455,25 +455,25 @@ class ColmapGUI(QMainWindow):
         mode = params.get("mode", "image")
         
         self.sharp_tab.set_processing_state(True)
-        self.logs_tab.append_log(f"--- Lancement Apple ML Sharp (Mode: {mode}) ---")
+        self.logs_tab.append_log(f"--- Launching Apple ML Sharp (Mode: {mode}) ---")
         
         if mode == "image":
             input_path_str = params.get("input_path")
             output_path_str = params.get("output_path")
             
             if not input_path_str:
-                 QMessageBox.critical(self, tr("msg_error"), "Veuillez selectionner un dossier d'images valide.")
+                 QMessageBox.critical(self, tr("msg_error"), "Please select a valid images folder.")
                  self.sharp_tab.set_processing_state(False)
                  return
                  
             input_path = Path(input_path_str)
             if not input_path.exists():
-                 QMessageBox.critical(self, tr("msg_error"), "Veuillez selectionner un dossier d'images valide.")
+                 QMessageBox.critical(self, tr("msg_error"), "Please select a valid images folder.")
                  self.sharp_tab.set_processing_state(False)
                  return
                  
             if not output_path_str:
-                 QMessageBox.critical(self, tr("msg_error"), "Veuillez selectionner un dossier de sortie.")
+                 QMessageBox.critical(self, tr("msg_error"), "Please select an output folder.")
                  self.sharp_tab.set_processing_state(False)
                  return
             
@@ -489,18 +489,18 @@ class ColmapGUI(QMainWindow):
             output_path_str = params.get("video_output_path")
             
             if not video_path_str:
-                 QMessageBox.critical(self, tr("msg_error"), "Veuillez selectionner un fichier video.")
+                 QMessageBox.critical(self, tr("msg_error"), "Please select a video file.")
                  self.sharp_tab.set_processing_state(False)
                  return
                  
             video_path = Path(video_path_str)
             if not video_path.exists():
-                 QMessageBox.critical(self, tr("msg_error"), "Veuillez selectionner un fichier video existant.")
+                 QMessageBox.critical(self, tr("msg_error"), "Please select an existing video file.")
                  self.sharp_tab.set_processing_state(False)
                  return
                  
             if not output_path_str:
-                 QMessageBox.critical(self, tr("msg_error"), "Veuillez selectionner un dossier de sortie.")
+                 QMessageBox.critical(self, tr("msg_error"), "Please select an output folder.")
                  self.sharp_tab.set_processing_state(False)
                  return
                  
@@ -526,7 +526,7 @@ class ColmapGUI(QMainWindow):
         """Arrête Sharp"""
         if self.sharp_worker and self.sharp_worker.isRunning():
             self.sharp_worker.stop()
-            self.logs_tab.append_log("Arrêt de Sharp demandé...")
+            self.logs_tab.append_log("Sharp stop requested...")
             
     def on_sharp_finished(self, success, message):
         """Fin Sharp"""

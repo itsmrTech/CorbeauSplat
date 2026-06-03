@@ -71,8 +71,8 @@ class ColmapEngine(BaseEngine):
             self._cv2_loaded = False
             
         if self.is_silicon:
-            self.log(f"Apple Silicon détecté - {self.num_threads} threads optimisés")
-        self.log(f"Binaires: {self.colmap_bin}, {self.ffmpeg_bin}, {self.glomap_bin}")
+            self.log(f"Apple Silicon detected - {self.num_threads} optimized threads")
+        self.log(f"Binaries: {self.colmap_bin}, {self.ffmpeg_bin}, {self.glomap_bin}")
 
     @property
     def project_path(self) -> Path:
@@ -87,32 +87,32 @@ class ColmapEngine(BaseEngine):
         """Exécute le pipeline complet de reconstruction."""
         try:
             setup_result = self._validate_and_setup_paths()
-            if not setup_result: return False, "Erreur de validation des chemins"
+            if not setup_result: return False, "Path validation error"
             project_dir, images_dir, checkpoints_dir = setup_result
             
             if not self._process_input(project_dir, images_dir):
                 if self.is_cancelled(): return False, tr("USER_CANCELLED")
-                return False, "Erreur lors de la preparation de l'entree"
+                return False, "Error while preparing input"
 
             pipeline_result, msg = self._run_reconstruction_pipeline(project_dir, images_dir)
             return pipeline_result, msg
             
         except Exception as e:
-            self.log(f"Erreur lors de l'exécution du pipeline: {e}")
+            self.log(f"Error while running the pipeline: {e}")
             self.logger.error("Exception in pipeline", exc_info=True)
-            if self.is_cancelled(): return False, "Arrete par l'utilisateur"
-            return False, "Une erreur est survenue lors du traitement."
+            if self.is_cancelled(): return False, "Stopped by user"
+            return False, "An error occurred during processing."
 
     def _validate_and_setup_paths(self) -> Optional[Tuple[Path, Path, Path]]:
         """Valide les chemins d'entrée/sortie et prépare la structure des dossiers."""
         safe_output = self.validate_path(str(self.output_path))
         if not safe_output:
-            self.log("Chemin de sortie non sécurisé")
+            self.log("Unsafe output path")
             return None
         self.output_path = safe_output
         
         if ".." in self.project_name or "/" in self.project_name or "\\" in self.project_name:
-            self.log("Nom de projet invalide")
+            self.log("Invalid project name")
             return None
 
         project_dir = self.output_path / self.project_name
@@ -123,26 +123,26 @@ class ColmapEngine(BaseEngine):
         images_dir.mkdir(parents=True, exist_ok=True)
         checkpoints_dir.mkdir(parents=True, exist_ok=True)
         
-        self.log(f"Préparation du projet dans : {project_dir}")
+        self.log(f"Preparing project in: {project_dir}")
         
         raw_input = str(self.input_path)
         if "|" in raw_input:
-            self.log("Validation de multiples chemins d'entree...")
+            self.log("Validating multiple input paths...")
             for p in raw_input.split("|"):
                 if not self.validate_path(p.strip()):
-                    self.log(f"Chemin d'entrée non sécurisé : {p}")
+                    self.log(f"Unsafe input path: {p}")
                     return None
             
             first_path = Path(raw_input.split("|")[0].strip())
             if not first_path.exists():
-                self.log(f"Entrée introuvable: {first_path}")
+                self.log(f"Input not found: {first_path}")
                 return None
         else:
             if not self.validate_path(raw_input):
-                 self.log(f"Chemin d'entrée non sécurisé: {raw_input}")
+                 self.log(f"Unsafe input path: {raw_input}")
                  return None
             if not self.input_path.exists():
-                 self.log(f"Entrée introuvable: {self.input_path}")
+                 self.log(f"Input not found: {self.input_path}")
                  return None
 
         return project_dir, images_dir, checkpoints_dir
@@ -170,7 +170,7 @@ class ColmapEngine(BaseEngine):
         sparse_dir = project_dir / "sparse"
         if sparse_dir.exists():
             shutil.rmtree(sparse_dir)
-            self.log(f"Reconstruction sparse precedente supprimee : {sparse_dir.name}")
+            self.log(f"Previous sparse reconstruction removed: {sparse_dir.name}")
         sparse_dir.mkdir(exist_ok=True)
 
         # Always start from a fresh database to avoid SQLite schema incompatibilities
@@ -180,14 +180,14 @@ class ColmapEngine(BaseEngine):
                         database_path.with_suffix(".db-shm")]:
             if db_file.exists():
                 db_file.unlink(missing_ok=True)
-                self.log(f"Base de données précédente supprimée : {db_file.name}")
+                self.log(f"Previous database removed: {db_file.name}")
 
         self.progress(25)
         
         if self.is_cancelled(): return False, tr("USER_CANCELLED")
         self.status(tr("status_feature_extraction", "Analyse des images en cours..."))    
         if not self.feature_extraction(str(database_path), str(images_dir)):
-            return False, "Échec extraction features"
+            return False, "Feature extraction failed"
         if self.params.matcher_type == 'sequential':
             self._sort_colmap_database_images(database_path)
             
@@ -196,7 +196,7 @@ class ColmapEngine(BaseEngine):
         if self.is_cancelled(): return False, tr("USER_CANCELLED")
         self.status(tr("status_feature_matching", "Recherche des points communs..."))
         if not self.feature_matching(str(database_path)):
-            return False, "Échec matching"
+            return False, "Matching failed"
             
         self.progress(75)
         
@@ -210,7 +210,7 @@ class ColmapEngine(BaseEngine):
 
         self.status(tr("status_reconstruction", "Création de la scène 3D..."))
         if not self.mapper(str(database_path), str(images_dir), str(sparse_dir)):
-            return False, "Échec reconstruction"
+            return False, "Reconstruction failed"
             
         self.progress(90)
         
@@ -220,7 +220,7 @@ class ColmapEngine(BaseEngine):
             dense_dir.mkdir(exist_ok=True)
             self.status(tr("status_undistorting", "Correction optique des images..."))
             if not self.image_undistorter(str(images_dir), str(sparse_dir), str(dense_dir)):
-                return False, "Echec undistortion"
+                return False, "Undistortion failed"
                 
         self.progress(95)
         
@@ -228,9 +228,9 @@ class ColmapEngine(BaseEngine):
             self.status(tr("status_ready", "Traitement terminé !"))
             self.create_brush_config(project_dir, images_dir, sparse_dir)
             self.progress(100)
-            return True, f"Dataset cree: {project_dir}"
+            return True, f"Dataset created: {project_dir}"
             
-        return False, "Arrete par l'utilisateur"
+        return False, "Stopped by user"
 
     def _prepare_images(self, images_dir: Path) -> bool:
         """Gère l'extraction vidéo ou la copie d'images."""
@@ -251,14 +251,14 @@ class ColmapEngine(BaseEngine):
             total_videos = len(video_paths)
             
             if total_videos == 0:
-                self.log(f"Aucune vidéo trouvée dans: {self.input_path}")
+                self.log(f"No video found in: {self.input_path}")
                 return False
             
             for i, video_path in enumerate(video_paths):
                 if self.is_cancelled(): return False
                 
                 if not video_path.exists():
-                    self.log(f"Attention: Video introuvable: {video_path}")
+                    self.log(f"Warning: video not found: {video_path}")
                     continue
                     
                 base_name = video_path.stem
@@ -267,11 +267,11 @@ class ColmapEngine(BaseEngine):
                 self.log(f"Extraction video ({i+1}/{total_videos}): {base_name}")
                 
                 if not self.extract_frames_from_video(str(video_path), images_dir, prefix=prefix):
-                     self.log(f"Echec extraction video: {base_name}")
+                     self.log(f"Video extraction failed: {base_name}")
                      return False
             return True
         else:
-            self.log("Copie des images sources vers le dossier de travail...")
+            self.log("Copying source images to the working folder...")
             try:
                 raw_input = str(self.input_path)
                 src_files = []
@@ -286,7 +286,7 @@ class ColmapEngine(BaseEngine):
                         src_files.append(self.input_path)
                 elif self.input_path.is_dir():
                     if self.input_path.resolve() == images_dir.resolve():
-                        self.log("Les images sont déjà dans le dossier de destination. Copie ignorée.")
+                        self.log("Images are already in the destination folder. Copy skipped.")
                         return True
                     src_files = [
                         f for f in self.input_path.rglob('*')
@@ -296,7 +296,7 @@ class ColmapEngine(BaseEngine):
                     ]
                 
                 total_files = len(src_files)
-                self.log(f"{total_files} images trouvées.")
+                self.log(f"{total_files} images found.")
                 
                 if total_files == 0:
                     return True
@@ -317,12 +317,12 @@ class ColmapEngine(BaseEngine):
                     if i % 10 == 0 or i == total_files - 1:
                         p = 5 + int((i / total_files) * 15)
                         self.progress(p)
-                        self.status(f"Copie des images : {i+1} / {total_files}")
+                        self.status(f"Copying images: {i+1} / {total_files}")
                 
-                self.log(f"✅ {total_files} images copiées vers {images_dir}")
+                self.log(f"✅ {total_files} images copied to {images_dir}")
                 return True
             except Exception as e:
-                self.log(f"Erreur copie images: {e}")
+                self.log(f"Image copy error: {e}")
                 return False
 
     def _convert_db_journal_mode(self, database_path: Path):
@@ -340,9 +340,9 @@ class ColmapEngine(BaseEngine):
                              database_path.parent / (database_path.name + "-shm")]:
                 if wal_file.exists():
                     wal_file.unlink()
-            self.log("Base de données convertie (WAL → DELETE) pour compatibilité GLOMAP.")
+            self.log("Database converted (WAL → DELETE) for GLOMAP compatibility.")
         except Exception as e:
-            self.log(f"Avertissement : conversion journal mode échouée : {e}")
+            self.log(f"Warning: journal mode conversion failed: {e}")
 
     def _run_upscale(self, project_dir: Path, images_dir: Path) -> bool:
         """Gère l'upscaling via upscayl-bin."""
@@ -393,15 +393,15 @@ class ColmapEngine(BaseEngine):
             return True
             
         except Exception as e:
-            self.log(f"Erreur Upscale: {e}")
+            self.log(f"Upscale error: {e}")
             return False
 
     def _check_and_normalize_resolution(self, images_dir: Path) -> bool:
         """Vérifie et normalise la résolution des images."""
-        self.log(f"\n{'='*60}\nVérification résolution images\n{'='*60}")
+        self.log(f"\n{'='*60}\nImage resolution check\n{'='*60}")
 
         if not getattr(self, '_cv2_loaded', False):
-            self.log("⚠️ OpenCV non disponible — vérification résolution ignorée.")
+            self.log("⚠️ OpenCV not available — resolution check skipped.")
             return True
             
         import cv2
@@ -414,7 +414,7 @@ class ColmapEngine(BaseEngine):
         if len(files) < 2:
             return True
 
-        self.log(f"Analyse de {len(files)} images...")
+        self.log(f"Analyzing {len(files)} images...")
 
         cache = {}
         sizes = {}
@@ -423,7 +423,7 @@ class ColmapEngine(BaseEngine):
                 return False
             img = cv2.imread(str(f), cv2.IMREAD_UNCHANGED)
             if img is None:
-                self.log(f"⚠️ Lecture impossible: {f.name}")
+                self.log(f"⚠️ Could not read: {f.name}")
                 continue
             h, w = img.shape[:2]
             cache[f] = img
@@ -435,14 +435,14 @@ class ColmapEngine(BaseEngine):
         unique_sizes = set(sizes.values())
         if len(unique_sizes) == 1:
             w, h = next(iter(unique_sizes))
-            self.log(f"✅ Résolution uniforme: {w}×{h} px")
+            self.log(f"✅ Uniform resolution: {w}×{h} px")
             return True
 
         min_w = min(s[0] for s in unique_sizes)
         min_h = min(s[1] for s in unique_sizes)
         images_to_resize = [(f, s) for f, s in sizes.items() if s != (min_w, min_h)]
 
-        self.log(f"⚠️ {len(unique_sizes)} résolutions différentes détectées.")
+        self.log(f"⚠️ {len(unique_sizes)} different resolutions detected.")
         self.log(f"Redimensionnement de {len(images_to_resize)} images → {min_w}×{min_h} px")
 
         for i, (f, _) in enumerate(images_to_resize):
@@ -450,7 +450,7 @@ class ColmapEngine(BaseEngine):
                 return False
             img = cache.get(f)
             if img is None:
-                self.log(f"⚠️ Lecture impossible: {f.name}")
+                self.log(f"⚠️ Could not read: {f.name}")
                 continue
             resized = cv2.resize(img, (min_w, min_h), interpolation=cv2.INTER_AREA)
             cv2.imwrite(str(f), resized)
@@ -458,7 +458,7 @@ class ColmapEngine(BaseEngine):
                 self.log(f"Redimensionnement: {i+1}/{len(images_to_resize)}")
                 self.status(f"Ajustement taille : {i+1} / {len(images_to_resize)}")
 
-        self.log(f"✅ {len(images_to_resize)} images redimensionnées vers {min_w}×{min_h} px")
+        self.log(f"✅ {len(images_to_resize)} images resized to {min_w}×{min_h} px")
         return True
 
     def extract_frames_from_video(self, video_path: str, images_dir: Path, prefix: Optional[str] = None) -> Optional[bool]:
@@ -499,10 +499,10 @@ class ColmapEngine(BaseEngine):
                 self.log(f"{num_frames} frames extraites")
                 return True
             else:
-                self.log(f"Erreur lors de l'extraction")
+                self.log(f"Error during extraction")
                 return None
         except Exception as e:
-            self.log(f"Erreur: {str(e)}")
+            self.log(f"Error: {str(e)}")
             return False
 
     def run_command(self, cmd: list, description: str, status_prefix: Optional[str] = None) -> bool:
@@ -589,7 +589,7 @@ class ColmapEngine(BaseEngine):
             for image_file in files:
                 f.write(f"{image_file.relative_to(image_root).as_posix()}\n")
 
-        self.log(f"Liste d'images triee pour COLMAP: {len(files)} images")
+        self.log(f"Sorted image list for COLMAP: {len(files)} images")
         return image_list_path
 
     def _sort_colmap_database_images(self, database_path: Path) -> None:
@@ -601,7 +601,7 @@ class ColmapEngine(BaseEngine):
                 ).fetchall()
                 id_map = {old_id: new_id for new_id, (old_id, _) in enumerate(rows, start=1)}
                 if all(old_id == new_id for old_id, new_id in id_map.items()):
-                    self.log("Ordre des images COLMAP deja trie.")
+                    self.log("COLMAP image order already sorted.")
                     return
 
                 con.execute("PRAGMA foreign_keys=OFF")
@@ -663,9 +663,9 @@ class ColmapEngine(BaseEngine):
                     "UPDATE sqlite_sequence SET seq = COALESCE((SELECT MAX(frame_id) FROM frames), 0) WHERE name = 'frames'"
                 )
                 con.commit()
-                self.log(f"Base COLMAP retriee pour matching sequentiel: {len(rows)} images")
+                self.log(f"COLMAP database re-sorted for sequential matching: {len(rows)} images")
         except Exception as e:
-            self.log(f"Avertissement: tri de la base COLMAP echoue: {e}")
+            self.log(f"Warning: COLMAP database sort failed: {e}")
 
     def _ensure_vocab_tree(self) -> Optional[Path]:
         """Locate the COLMAP vocabulary tree, downloading it on demand.
@@ -797,7 +797,7 @@ class ColmapEngine(BaseEngine):
         if self.params.undistort_images:
             final_images_path = output_dir / "dense" / "images"
             final_sparse_path = output_dir / "dense" / "sparse"
-            self.log("Utilisation des images et reconstruction non-distordues pour Brush")
+            self.log("Using undistorted images and reconstruction for Brush")
         else:
             final_images_path = images_dir
             final_sparse_path = sparse_dir / "0"
@@ -814,7 +814,7 @@ class ColmapEngine(BaseEngine):
         config_path = output_dir / "brush_config.json"
         with open(config_path, 'w') as f:
             json.dump(config, f, indent=2)
-        self.log(f"Configuration Brush créée: {config_path}")
+        self.log(f"Brush configuration created: {config_path}")
         
     def stop(self):
         """Arrête le processus en cours."""
@@ -825,10 +825,10 @@ class ColmapEngine(BaseEngine):
         """Supprime le contenu d'un dossier de projet de manière sécurisée."""
         safe_path = Path(target_path).resolve()
         if str(safe_path) == "/" or str(safe_path) == str(Path.home()):
-             return False, "Tentative de suppression critique bloquée par sécurité."
+             return False, "Critical deletion attempt blocked for safety."
 
         if not target_path.exists():
-            return False, "Le dossier n'existe pas"
+            return False, "The folder does not exist"
             
         try:
             for item in target_path.iterdir():
@@ -838,7 +838,7 @@ class ColmapEngine(BaseEngine):
                     send2trash.send2trash(str(item))
                 except Exception as e:
                     logging.getLogger(__name__).error("Failed to trash %s. Reason: %s", item, e)
-            return True, "Contenu mis à la corbeille"
+            return True, "Content moved to trash"
         except Exception as e:
             logging.getLogger(__name__).error("Error during project cleanup: %s", e)
             return False, str(e)
