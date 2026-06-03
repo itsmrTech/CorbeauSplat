@@ -9,10 +9,21 @@ import sqlite3
 from pathlib import Path
 from typing import Tuple, Any, Optional, Callable
 from .base_engine import BaseEngine
-from .system import is_apple_silicon, get_optimal_threads, resolve_binary
+from .system import is_apple_silicon, get_optimal_threads, resolve_binary, resolve_project_root
 from .i18n import tr
 
 _IMAGE_EXTS = {'.jpg', '.jpeg', '.png'}
+
+# COLMAP vocabulary tree used by the vocab_tree matcher. The 256K-word tree is
+# COLMAP's own default and suits scenes from ~1K to ~10K images. It is fetched
+# on demand into the engines/ directory (the same place resolve_binary searches)
+# and reused across runs. The official COLMAP release is tried first, with the
+# demuc.de mirror as a fallback.
+_VOCAB_TREE_FILENAME = "vocab_tree_flickr100K_words256K.bin"
+_VOCAB_TREE_URLS = (
+    "https://github.com/colmap/colmap/releases/download/3.11.1/vocab_tree_flickr100K_words256K.bin",
+    "https://demuc.de/colmap/vocab_tree_flickr100K_words256K.bin",
+)
 
 
 def _first_available_model() -> str:
@@ -653,33 +664,90 @@ class ColmapEngine(BaseEngine):
         except Exception as e:
             self.log(f"Avertissement: tri de la base COLMAP echoue: {e}")
 
+    def _ensure_vocab_tree(self) -> Optional[Path]:
+        """Locate the COLMAP vocabulary tree, downloading it on demand.
+
+        The vocab_tree matcher requires a pre-trained vocabulary tree .bin file.
+        We look for it in the engines/ directory (the same location
+        resolve_binary searches) and download it from COLMAP's official release
+        if missing, falling back to the demuc.de mirror. Returns the path on
+        success, or None if the tree could not be obtained.
+        """
+        engines_dir = resolve_project_root() / "engines"
+        vocab_path = engines_dir / _VOCAB_TREE_FILENAME
+
+        if vocab_path.exists() and vocab_path.stat().st_size > 0:
+            self.log(f"Vocabulary tree trouve : {vocab_path}")
+            return vocab_path
+
+        import urllib.request
+
+        engines_dir.mkdir(parents=True, exist_ok=True)
+        tmp_path = vocab_path.with_suffix(vocab_path.suffix + ".part")
+        self.log(f"Vocabulary tree absent, telechargement de {_VOCAB_TREE_FILENAME}...")
+
+        for url in _VOCAB_TREE_URLS:
+            if self.is_cancelled():
+                return None
+            try:
+                self.log(f"Telechargement du vocabulary tree depuis {url}")
+                req = urllib.request.Request(url, headers={"User-Agent": "CorbeauSplat"})
+                with urllib.request.urlopen(req, timeout=120) as resp, open(tmp_path, "wb") as f:
+                    shutil.copyfileobj(resp, f)
+                if tmp_path.stat().st_size == 0:
+                    raise IOError("fichier telecharge vide")
+                tmp_path.replace(vocab_path)
+                self.log(f"Vocabulary tree pret : {vocab_path}")
+                return vocab_path
+            except Exception as e:
+                self.log(f"Avertissement : echec du telechargement depuis {url} : {e}")
+                tmp_path.unlink(missing_ok=True)
+
+        self.log(
+            "ERREUR : vocabulary tree introuvable. Telechargez "
+            f"'{_VOCAB_TREE_FILENAME}' manuellement dans le dossier 'engines/' "
+            "ou choisissez un autre type de matching."
+        )
+        return None
+
     def feature_matching(self, database_path: str) -> bool:
-        """Exécute le matching des features."""
-        if self.params.matcher_type == 'sequential':
+        """Exécute le matching des features selon la strategie choisie."""
+        matcher = self.params.matcher_type
+        common_args = [
+            '--database_path', database_path,
+            '--FeatureMatching.num_threads', str(self.num_threads),
+            '--SiftMatching.max_ratio', str(self.params.max_ratio),
+            '--SiftMatching.max_distance', str(self.params.max_distance),
+            '--SiftMatching.cross_check', '1' if self.params.cross_check else '0',
+            '--FeatureMatching.guided_matching', '1' if self.params.guided_matching else '0',
+        ]
+
+        if matcher == 'sequential':
             cmd = [
-                self.colmap_bin, 'sequential_matcher',
-                '--database_path', database_path,
-                '--FeatureMatching.num_threads', str(self.num_threads),
-                '--SiftMatching.max_ratio', str(self.params.max_ratio),
-                '--SiftMatching.max_distance', str(self.params.max_distance),
-                '--SiftMatching.cross_check', '1' if self.params.cross_check else '0',
-                '--FeatureMatching.guided_matching', '1' if self.params.guided_matching else '0',
+                self.colmap_bin, 'sequential_matcher', *common_args,
                 '--SequentialMatching.overlap', str(self.params.sequential_overlap),
                 '--SequentialMatching.quadratic_overlap', '1',
             ]
             description = "Matching Sequentiel"
-        else:
+        elif matcher == 'vocab_tree':
+            vocab_path = self._ensure_vocab_tree()
+            if vocab_path is None:
+                # The user explicitly chose Vocab Tree matching. Do NOT fall back
+                # to exhaustive matching silently — surface the failure instead.
+                self.log("Matching Vocab Tree impossible : vocabulary tree indisponible.")
+                return False
             cmd = [
-                self.colmap_bin, 'exhaustive_matcher',
-                '--database_path', database_path,
-                '--FeatureMatching.num_threads', str(self.num_threads),
-                '--SiftMatching.max_ratio', str(self.params.max_ratio),
-                '--SiftMatching.max_distance', str(self.params.max_distance),
-                '--SiftMatching.cross_check', '1' if self.params.cross_check else '0',
-                '--FeatureMatching.guided_matching', '1' if self.params.guided_matching else '0',
+                self.colmap_bin, 'vocab_tree_matcher', *common_args,
+                '--VocabTreeMatching.vocab_tree_path', str(vocab_path),
             ]
+            description = "Matching Vocab Tree"
+        else:
+            if matcher != 'exhaustive':
+                self.log(f"Type de matcher inconnu '{matcher}' — repli sur exhaustive_matcher.")
+            cmd = [self.colmap_bin, 'exhaustive_matcher', *common_args]
             description = "Matching Exhaustif"
-            
+
+        self.log(f"Strategie de matching : '{matcher}' -> {cmd[1]}")
         return self.run_command(cmd, description, status_prefix="Comparaison")
 
     def mapper(self, database_path: str, images_dir: str, sparse_dir: Path) -> bool:
