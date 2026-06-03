@@ -232,6 +232,8 @@
     "360_check_ai_mask": "إخفاء الشخص",
     "360_check_ai_skip": "تخطي الإطار السيء",
     "360_check_adaptive": "التكيف الذكي",
+    "360_check_drop_operator": "Drop Operator Faces (remove image)",
+    "360_tip_drop_operator": "After AI masking, delete each cube face where the operator is detected, instead of keeping it masked. Removes the offending image entirely to reduce artifacts.",
     "360_lbl_threshold": "عتبة الحركة:",
     "360_btn_extract_only": "استخرج فقط",
     "360_msg_success": "النجاح",

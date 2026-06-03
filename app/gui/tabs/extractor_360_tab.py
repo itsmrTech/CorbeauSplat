@@ -137,7 +137,11 @@ class Extractor360Tab(QWidget):
         self.check_ai_mask = QCheckBox(tr("360_check_ai_mask"))
         self.check_ai_mask.setToolTip(tr("360_tip_ai_mask"))
         ai_layout.addWidget(self.check_ai_mask)
-        
+
+        self.check_drop_operator = QCheckBox(tr("360_check_drop_operator"))
+        self.check_drop_operator.setToolTip(tr("360_tip_drop_operator"))
+        ai_layout.addWidget(self.check_drop_operator)
+
         self.check_ai_skip = QCheckBox(tr("360_check_ai_skip"))
         self.check_ai_skip.setToolTip(tr("360_tip_ai_skip"))
         ai_layout.addWidget(self.check_ai_skip)
@@ -341,6 +345,7 @@ class Extractor360Tab(QWidget):
             self.combo_format.setCurrentText(params["format"])
             
         if "ai_mask" in params: self.check_ai_mask.setChecked(params["ai_mask"])
+        if "drop_operator" in params: self.check_drop_operator.setChecked(params["drop_operator"])
         if "ai_skip" in params: self.check_ai_skip.setChecked(params["ai_skip"])
         if "adaptive" in params: self.check_adaptive.setChecked(params["adaptive"])
         if "motion_threshold" in params: self.spin_threshold.setValue(params["motion_threshold"])
@@ -366,6 +371,7 @@ class Extractor360Tab(QWidget):
             "layout": self.combo_layout.currentData(),
             "format": self.combo_format.currentText(),
             "ai_mask": self.check_ai_mask.isChecked(),
+            "drop_operator": self.check_drop_operator.isChecked(),
             "ai_skip": self.check_ai_skip.isChecked(),
             "adaptive": self.check_adaptive.isChecked(),
             "motion_threshold": self.spin_threshold.value()
@@ -396,6 +402,8 @@ class Extractor360Tab(QWidget):
         self.group_ai.setTitle(tr("360_group_ai"))
         self.check_ai_mask.setText(tr("360_check_ai_mask"))
         self.check_ai_mask.setToolTip(tr("360_tip_ai_mask"))
+        self.check_drop_operator.setText(tr("360_check_drop_operator"))
+        self.check_drop_operator.setToolTip(tr("360_tip_drop_operator"))
         self.check_ai_skip.setText(tr("360_check_ai_skip"))
         self.check_ai_skip.setToolTip(tr("360_tip_ai_skip"))
         self.check_adaptive.setText(tr("360_check_adaptive"))
