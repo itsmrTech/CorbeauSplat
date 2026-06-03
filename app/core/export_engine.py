@@ -51,7 +51,7 @@ class ExportEngine(BaseEngine):
         output_dir = Path(output_path)
 
         if not input_file.exists():
-            self.log(f"Erreur: fichier introuvable {input_file}")
+            self.log(f"Error: file not found {input_file}")
             return False
 
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -68,7 +68,7 @@ class ExportEngine(BaseEngine):
         elif output_format == "spz":
             return self._export_spz(input_file, output_dir, opts)
         else:
-            self.log(f"Format non supporté: {output_format}")
+            self.log(f"Unsupported format: {output_format}")
             return False
 
     def _export_ply(self, input_file: Path, output_dir: Path, opts: dict) -> bool:
@@ -85,14 +85,14 @@ class ExportEngine(BaseEngine):
                 with open(input_file, 'rb') as f_in:
                     with gzip.open(output_file, 'wb') as f_out:
                         shutil.copyfileobj(f_in, f_out)
-                self.log(f"Compressé: {output_file}")
+                self.log(f"Compressed: {output_file}")
                 return True
             else:
                 shutil.copy2(input_file, output_file)
-                self.log(f"Copié: {output_file}")
+                self.log(f"Copied: {output_file}")
                 return True
         except Exception as e:
-            self.log(f"Erreur: {e}")
+            self.log(f"Error: {e}")
             return False
 
     def _export_ply_ascii(self, input_file: Path, output_file: Path) -> bool:
@@ -102,13 +102,13 @@ class ExportEngine(BaseEngine):
                 from plyfile import PlyData
                 ply = PlyData.read(str(input_file))
                 ply.write(str(output_file), text=True)
-                self.log(f"Exporté PLY ASCII: {output_file}")
+                self.log(f"Exported PLY ASCII: {output_file}")
                 return True
             except ImportError:
-                self.log("plyfile requis pour conversion ASCII. pip install plyfile")
+                self.log("plyfile required for ASCII conversion. pip install plyfile")
                 return False
         except Exception as e:
-            self.log(f"Erreur conversion PLY ASCII: {e}")
+            self.log(f"PLY ASCII conversion failed: {e}")
             return False
 
     def _export_xyz(self, input_file: Path, output_dir: Path, opts: dict) -> bool:
@@ -156,10 +156,10 @@ class ExportEngine(BaseEngine):
                             else:
                                 fout.write(f"{parts[0]}{delimiter}{parts[1]}{delimiter}{parts[2]}\n")
 
-            self.log(f"Exporté XYZ{' (avec couleurs)' if include_colors else ''}: {output_file}")
+            self.log(f"Exported XYZ{' (with colors)' if include_colors else ''}: {output_file}")
             return True
         except Exception as e:
-            self.log(f"Erreur export XYZ: {e}")
+            self.log(f"XYZ export failed: {e}")
             return False
 
     def _export_obj(self, input_file: Path, output_dir: Path, opts: dict) -> bool:
@@ -257,10 +257,10 @@ class ExportEngine(BaseEngine):
 
                     fout.write(f"\n# {vertex_count} vertices\n")
 
-            self.log(f"Exporté OBJ: {output_file}" + (f" + {mtl_file}" if include_mtl else ""))
+            self.log(f"Exported OBJ: {output_file}" + (f" + {mtl_file}" if include_mtl else ""))
             return True
         except Exception as e:
-            self.log(f"Erreur export OBJ: {e}")
+            self.log(f"OBJ export failed: {e}")
             return False
 
     def _export_glb(self, input_file: Path, output_dir: Path, opts: dict) -> bool:
@@ -314,12 +314,12 @@ class ExportEngine(BaseEngine):
             
             # Export as GLB
             cloud.export(str(output_file))
-            self.log(f"Exporté GLB via trimesh: {output_file}")
+            self.log(f"Exported GLB via trimesh: {output_file}")
             return True
         except ImportError:
             return False
         except Exception as e:
-            self.log(f"Erreur trimesh GLB: {e}")
+            self.log(f"trimesh GLB failed: {e}")
             return False
 
     def _try_export_glb_open3d(self, input_file: Path, output_file: Path, opts: dict) -> bool:
@@ -339,7 +339,7 @@ class ExportEngine(BaseEngine):
                 scene = trimesh.load(str(temp_ply))
                 scene.export(str(output_file))
                 temp_ply.unlink(missing_ok=True)
-                self.log(f"Exporté GLB via open3d+trimesh: {output_file}")
+                self.log(f"Exported GLB via open3d+trimesh: {output_file}")
                 return True
             except ImportError:
                 pass
@@ -349,7 +349,7 @@ class ExportEngine(BaseEngine):
         except ImportError:
             return False
         except Exception as e:
-            self.log(f"Erreur open3d GLB: {e}")
+            self.log(f"open3d GLB failed: {e}")
             return False
 
     def _try_export_glb_assimp(self, input_file: Path, output_file: Path, opts: dict) -> bool:
@@ -386,14 +386,14 @@ class ExportEngine(BaseEngine):
             if self._convert_obj_to_glb(temp_obj, output_file):
                 temp_obj.unlink(missing_ok=True)
                 temp_mtl.unlink(missing_ok=True)
-                self.log(f"Exporté GLB via assimp: {output_file}")
+                self.log(f"Exported GLB via assimp: {output_file}")
                 return True
 
             temp_obj.unlink(missing_ok=True)
             temp_mtl.unlink(missing_ok=True)
             return False
         except Exception as e:
-            self.log(f"Erreur assimp GLB: {e}")
+            self.log(f"assimp GLB failed: {e}")
             return False
 
     def _export_spz(self, input_file: Path, output_dir: Path, opts: dict) -> bool:
@@ -500,11 +500,11 @@ class ExportEngine(BaseEngine):
                 # Alphas as uint8
                 f.write(bytes(alphas))
 
-            self.log(f"Exporté SPZ: {output_file} ({num_points} points)")
+            self.log(f"Exported SPZ: {output_file} ({num_points} points)")
             return True
 
         except Exception as e:
-            self.log(f"Erreur export SPZ: {e}")
+            self.log(f"SPZ export failed: {e}")
             return False
 
     def _compress_scale(self, s0: float, s1: float, s2: float) -> list:

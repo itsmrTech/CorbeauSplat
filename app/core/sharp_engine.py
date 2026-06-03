@@ -93,7 +93,7 @@ class SharpEngine(BaseEngine):
         # Ensure all args are strings for Popen
         cmd = [str(arg) for arg in cmd]
         
-        self.log(f"Lancement Sharp: {' '.join(cmd)}")
+        self.log(f"Starting Sharp: {' '.join(cmd)}")
         
         # GoF-Template Method : Délégation au runner 
         return self._execute_command(cmd, env=env)

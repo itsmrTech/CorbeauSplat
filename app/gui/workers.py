@@ -162,7 +162,7 @@ class BrushWorker(BaseWorker):
         
     def run(self):
         try:
-            self.log_signal.emit(f"Initialisation BrushWorker...")
+            self.log_signal.emit(f"Initializing BrushWorker...")
             self.log_signal.emit(f"Input: {self.input_path}")
             self.log_signal.emit(f"Output: {self.output_path}")
 
@@ -170,10 +170,10 @@ class BrushWorker(BaseWorker):
             resolved_input = self.resolve_dataset_root(Path(self.input_path))
             
             if str(resolved_input) != str(self.input_path):
-                self.log_signal.emit(f"Chemin ajusté: {self.input_path} -> {resolved_input}")
+                self.log_signal.emit(f"Path adjusted: {self.input_path} -> {resolved_input}")
             
             if not resolved_input.exists():
-                self.finished_signal.emit(False, f"Le dossier dataset n'existe pas: {resolved_input}")
+                self.finished_signal.emit(False, f"Dataset folder not found: {resolved_input}")
                 return
 
             # Gestion de la résolution manuelle
@@ -182,20 +182,20 @@ class BrushWorker(BaseWorker):
             
             if max_res > 0:
                 custom_args += f" --max-resolution {max_res}"
-                self.log_signal.emit(f"Opération: Résolution forcée à {max_res}px")
+                self.log_signal.emit(f"Operation: Resolution forced to {max_res}px")
             
             # Gestion Refine Auto (Prioritaire sur Init PLY manuel)
             refine_mode = self.params.get("refine_mode")
             
             if refine_mode:
-                self.log_signal.emit("Mode Raffinement (Refine) activé...")
+                self.log_signal.emit("Refine mode enabled...")
                 checkpoints_dir = resolved_input / "checkpoints"
                 
                 # 1. Trouver le dernier PLY
                 latest_ply = None
                 last_mtime = 0
                 if checkpoints_dir.exists():
-                    self.log_signal.emit(f"Recherche de checkpoints dans {checkpoints_dir}...")
+                    self.log_signal.emit(f"Searching for checkpoints in {checkpoints_dir}...")
                     for ply_path in checkpoints_dir.rglob("*.ply"):
                         mt = ply_path.stat().st_mtime
                         if mt > last_mtime:
@@ -203,11 +203,11 @@ class BrushWorker(BaseWorker):
                             latest_ply = ply_path
                 
                 if latest_ply:
-                    self.log_signal.emit(f"Checkpoint trouvé: {latest_ply.name}")
+                    self.log_signal.emit(f"Checkpoint found: {latest_ply.name}")
                     
                     # 2. Créer dossier Refine
                     refine_dir = resolved_input / "Refine"
-                    self.log_signal.emit(f"Préparation du dossier de raffinement: {refine_dir}")
+                    self.log_signal.emit(f"Preparing refine folder: {refine_dir}")
                     
                     # Safety check: Ensure refine_dir is inside resolved_input
                     try:
@@ -215,41 +215,41 @@ class BrushWorker(BaseWorker):
                             shutil.rmtree(refine_dir) 
                         refine_dir.mkdir(parents=True, exist_ok=True)
                     except Exception as e:
-                        self.log_signal.emit(f"ERREUR lors de la préparation du dossier Refine: {e}")
-                        self.finished_signal.emit(False, f"Erreur dossier Refine: {e}")
+                        self.log_signal.emit(f"ERROR preparing Refine folder: {e}")
+                        self.finished_signal.emit(False, f"Refine folder error: {e}")
                         return
                     
                     # 3. Copier init.ply
                     dest_init = refine_dir / "init.ply"
                     try:
                         shutil.copy2(latest_ply, dest_init)
-                        self.log_signal.emit(f"Copié {latest_ply.name} vers {dest_init}")
+                        self.log_signal.emit(f"Copied {latest_ply.name} to {dest_init}")
                     except Exception as e:
-                        self.log_signal.emit(f"ERREUR lors de la copie de init.ply: {e}")
-                        self.finished_signal.emit(False, f"Erreur copie init.ply: {e}")
+                        self.log_signal.emit(f"ERROR copying init.ply: {e}")
+                        self.finished_signal.emit(False, f"init.ply copy error: {e}")
                         return
                     
                     # 4. Symlinks sparse & images
                     try:
-                        self.log_signal.emit("Création des liens symboliques pour sparse et images...")
+                        self.log_signal.emit("Creating symlinks for sparse and images...")
                         os.symlink(resolved_input / "sparse", refine_dir / "sparse")
                         try:
                             os.symlink(resolved_input / "images", refine_dir / "images")
                         except OSError as e:
-                            self.log_signal.emit(f"Symlink images échoué ({e}), tentative copie (plus lent)...")
+                            self.log_signal.emit(f"Images symlink failed ({e}), falling back to copy (slower)...")
                             shutil.copytree(resolved_input / "images", refine_dir / "images")
 
-                        self.log_signal.emit("Liens symboliques/copies terminés.")
+                        self.log_signal.emit("Symlinks/copies complete.")
                         
                         # 5. Rediriger l'entraînement
                         resolved_input = refine_dir
                         self.output_path = refine_dir / "checkpoints"
                         self.output_path.mkdir(parents=True, exist_ok=True)
-                        self.log_signal.emit(f"Dossier de travail redirigé vers: {refine_dir}")
+                        self.log_signal.emit(f"Working folder redirected to: {refine_dir}")
                         
                     except Exception as e:
-                        self.log_signal.emit(f"Erreur fatale lors de la création de l'environnement Refine: {e}")
-                        self.finished_signal.emit(False, f"Erreur env Refine: {e}")
+                        self.log_signal.emit(f"Fatal error creating Refine environment: {e}")
+                        self.finished_signal.emit(False, f"Refine env error: {e}")
                         return
                         
                     if self.params.get("start_iter", 0) == 0:
@@ -259,9 +259,9 @@ class BrushWorker(BaseWorker):
                             detected_iter = int(match.group(1))
                         
                         self.params["start_iter"] = detected_iter
-                        self.log_signal.emit(f"Refine: Start Iteration réglé sur {detected_iter}")
+                        self.log_signal.emit(f"Refine: Start Iteration set to {detected_iter}")
                 else:
-                    self.log_signal.emit("AVERTISSEMENT: Mode Refine activé mais aucun checkpoint (.ply) trouvé. Lancement mode normal.")
+                    self.log_signal.emit("WARNING: Refine mode enabled but no checkpoint (.ply) found. Starting in normal mode.")
 
             # Fin gestion Init / Refine
 
@@ -280,7 +280,7 @@ class BrushWorker(BaseWorker):
                     shutil.move(str(output_dir), str(backup_dir))
                     output_dir.mkdir(parents=True, exist_ok=True)
                     self.output_path = output_dir
-                    self.log_signal.emit(f"Nouveau training : anciens checkpoints archivés dans '{backup_name}'")
+                    self.log_signal.emit(f"New training: existing checkpoints archived to '{backup_name}'")
 
             # Args Densification
             densify_args = []
@@ -306,7 +306,7 @@ class BrushWorker(BaseWorker):
                 self._rename_checkpoints_with_project_name()
 
             # Construct CMD
-            self.log_signal.emit("Lancement de la commande Brush...")
+            self.log_signal.emit("Launching Brush command...")
             # Use refactored train method (Template Method)
             returncode = self.engine.train(resolved_input, self.output_path, self.params)
             
@@ -317,12 +317,12 @@ class BrushWorker(BaseWorker):
                 self.handle_ply_rename()
                 if self.project_name:
                     self._rename_checkpoints_with_project_name()
-                self.finished_signal.emit(True, "Entrainement Brush terminé avec succès")
+                self.finished_signal.emit(True, "Brush training complete")
             else:
-                self.finished_signal.emit(False, "Brush a retourné une erreur (voir logs ci-dessus).")
+                self.finished_signal.emit(False, "Brush returned an error (see logs above).")
                 
         except Exception as e:
-            self.log_signal.emit(f"EXCEPTION dans BrushWorker: {e}\n{traceback.format_exc()}")
+            self.log_signal.emit(f"EXCEPTION in BrushWorker: {e}\n{traceback.format_exc()}")
             self.finished_signal.emit(False, f"Exception: {e}")
 
     def handle_ply_rename(self):
@@ -377,11 +377,11 @@ class BrushWorker(BaseWorker):
             dest_path = output_path / ply_name
             try:
                 shutil.move(str(found_ply), str(dest_path))
-                self.log_signal.emit(f"Fichier PLY renommé en : {ply_name}")
+                self.log_signal.emit(f"PLY file renamed to: {ply_name}")
             except Exception as e:
-                self.log_signal.emit(f"Erreur renommage PLY: {str(e)}")
+                self.log_signal.emit(f"PLY rename error: {str(e)}")
         else:
-            self.log_signal.emit("Attention: Aucun fichier PLY trouvé à renommer.")
+            self.log_signal.emit("Warning: No PLY file found to rename.")
 
     def _rename_checkpoints_with_project_name(self):
         """Renomme tous les PLY de checkpoints pour inclure le nom du projet."""
@@ -396,9 +396,9 @@ class BrushWorker(BaseWorker):
                     ply_path.rename(dest)
                     renamed += 1
                 except Exception as e:
-                    self.log_signal.emit(f"Erreur renommage {ply_path.name}: {e}")
+                    self.log_signal.emit(f"Rename error for {ply_path.name}: {e}")
         if renamed:
-            self.log_signal.emit(f"Checkpoints renommés avec le préfixe '{prefix}' ({renamed} fichiers)")
+            self.log_signal.emit(f"Checkpoints renamed with prefix '{prefix}' ({renamed} files)")
 
 class SharpWorker(BaseWorker):
     """Thread worker pour exécuter Apple ML Sharp"""
@@ -461,7 +461,7 @@ class SharpWorker(BaseWorker):
                             else:
                                 self.log_signal.emit(tr("err_upscale_failed", "Upscale failed. Using original image."))
                         else:
-                            self.log_signal.emit("⚠ Upscale activé mais aucun modèle disponible — ignoré.")
+                            self.log_signal.emit("⚠ Upscale enabled but no model available — skipped.")
                     else:
                         self.log_signal.emit(tr("err_upscale_folder", "Folder upscale not supported in Sharp mode."))
                 else:
@@ -474,7 +474,7 @@ class SharpWorker(BaseWorker):
             returncode = self.engine.predict(self.input_path, self.output_path, self.params)
             success = (returncode == 0)
             
-            self.finished_signal.emit(success, "Prédiction Sharp terminée." if success else "Sharp a retourné une erreur (voir logs).")
+            self.finished_signal.emit(success, "Sharp prediction complete." if success else "Sharp returned an error (see logs).")
         except Exception as e:
             self.finished_signal.emit(False, str(e))
 
@@ -526,8 +526,8 @@ class SharpVideoWorker(BaseWorker):
             try:
                 result = subprocess.run(cmd, capture_output=True, text=True, env=env)
             except FileNotFoundError:
-                self.log_signal.emit("Erreur : FFmpeg introuvable. Installez-le via Homebrew : brew install ffmpeg")
-                self.finished_signal.emit(False, "FFmpeg non installé.")
+                self.log_signal.emit("Error: FFmpeg not found. Install it via Homebrew: brew install ffmpeg")
+                self.finished_signal.emit(False, "FFmpeg not installed.")
                 return
             if result.returncode != 0:
                 self.log_signal.emit(f"FFmpeg error: {result.stderr}")
@@ -539,16 +539,16 @@ class SharpVideoWorker(BaseWorker):
             total_frames = len(frames)
             
             if total_frames == 0:
-                self.finished_signal.emit(False, "Aucune frame extraite. Vérifiez la vidéo ou le frame skip.")
+                self.finished_signal.emit(False, "No frames extracted. Check the video or frame skip setting.")
                 return
                 
-            self.log_signal.emit(f"Total frames extraites: {total_frames}")
+            self.log_signal.emit(f"Total frames extracted: {total_frames}")
             
             # 3. Process each frame with SHARP
             success_count = 0
             for current_idx, frame_path in enumerate(frames):
                 if self.isInterruptionRequested():
-                    self.log_signal.emit("--- Arrêté par l'utilisateur ---")
+                    self.log_signal.emit("--- Cancelled by user ---")
                     break
                     
                 display_idx = current_idx + 1
@@ -580,9 +580,9 @@ class SharpVideoWorker(BaseWorker):
                     shutil.rmtree(frame_out_dir)
                     
             if success_count > 0:
-                self.finished_signal.emit(True, f"Conversion Video -> PLY terminée. {success_count}/{total_frames} frames traitées avec succès.")
+                self.finished_signal.emit(True, f"Video -> PLY conversion complete. {success_count}/{total_frames} frames processed successfully.")
             else:
-                self.finished_signal.emit(False, "Aucune frame n'a pu être traitée par SHARP.")
+                self.finished_signal.emit(False, "No frames could be processed by SHARP.")
 
         except Exception as e:
             self.log_signal.emit(f"EXCEPTION: {e}\n{traceback.format_exc()}")
@@ -611,7 +611,7 @@ class FourDGSWorker(BaseWorker):
         )
 
     def run(self):
-        self.log_signal.emit("--- Démarrage 4DGS ---")
+        self.log_signal.emit("--- Starting 4DGS ---")
 
         
         try:
@@ -621,7 +621,7 @@ class FourDGSWorker(BaseWorker):
                 # COLMAP ONLY MODE
                 success = self.engine.run_colmap(self.output_dir)
                 
-            self.finished_signal.emit(success, "Dataset 4DGS créé avec succès." if success else "Échec du traitement 4DGS.")
+            self.finished_signal.emit(success, "4DGS dataset created successfully." if success else "4DGS processing failed.")
         except Exception as e:
             self.finished_signal.emit(False, str(e))
 

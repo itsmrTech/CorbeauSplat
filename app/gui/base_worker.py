@@ -35,7 +35,7 @@ class BaseWorker(QThread):
             if env:
                 actual_env.update(env)
             
-            self.log_signal.emit(f"Exécution commande: {' '.join(cmd)}")
+            self.log_signal.emit(f"Running command: {' '.join(cmd)}")
             
             self.process = subprocess.Popen(
                 cmd,
@@ -49,7 +49,7 @@ class BaseWorker(QThread):
             
             for line in self.process.stdout:
                 if not self.is_running or self.isInterruptionRequested():
-                    self.log_signal.emit("Processus arrêté par l'utilisateur.")
+                    self.log_signal.emit("Process cancelled by user.")
                     self.process.terminate()
                     break
                 
@@ -61,7 +61,7 @@ class BaseWorker(QThread):
             self.process.wait()
             return self.process.returncode == 0
         except Exception as e:
-            self.log_signal.emit(f"Erreur CRITIQUE lors du lancement du processus : {e}")
+            self.log_signal.emit(f"CRITICAL error launching process: {e}")
             self.log_signal.emit(traceback.format_exc())
             return False
 

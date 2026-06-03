@@ -58,7 +58,7 @@ class SuperSplatEngine(BaseEngine):
         """
         splat_path = self.get_supersplat_path()
         if not splat_path.exists():
-            return False, "Moteur SuperSplat non trouvé"
+            return False, "SuperSplat engine not found"
 
         # Ensure any previous instance is stopped before starting a new one.
         self.stop_supersplat()
@@ -67,10 +67,10 @@ class SuperSplatEngine(BaseEngine):
         try:
             self.runner.start(cmd, env=os.environ.copy(), cwd=str(splat_path))
             self.supersplat_process = getattr(self.runner, '_process', None)
-            self.log(f"SuperSplat démarré sur http://localhost:{port}")
-            return True, f"SuperSplat démarré sur http://localhost:{port}"
+            self.log(f"SuperSplat started on http://localhost:{port}")
+            return True, f"SuperSplat started on http://localhost:{port}"
         except Exception as e:
-            self.log(f"Erreur lors du démarrage de SuperSplat : {e}", level=logging.ERROR)
+            self.log(f"Error starting SuperSplat: {e}", level=logging.ERROR)
             return False, str(e)
 
     def stop_supersplat(self) -> None:
@@ -78,7 +78,7 @@ class SuperSplatEngine(BaseEngine):
         if self.supersplat_process:
             self._kill_process(self.supersplat_process)
             self.supersplat_process = None
-            self.log("SuperSplat arrêté")
+            self.log("SuperSplat stopped")
 
     # ---------------------------------------------------------------------
     # Data server (CORS‑enabled) management
@@ -93,7 +93,7 @@ class SuperSplatEngine(BaseEngine):
 
         dir_path = Path(directory).expanduser().resolve()
         if not dir_path.is_dir():
-            return False, "Dossier de données introuvable"
+            return False, "Data folder not found"
 
         allowed_origin = f"http://localhost:{port}"
 
@@ -119,12 +119,12 @@ class SuperSplatEngine(BaseEngine):
                 self.httpd = _ReuseAddrTCPServer(("127.0.0.1", port), handler)
                 self.httpd.serve_forever()
             except Exception as e:
-                self.log(f"Erreur Data Server: {e}", level=logging.ERROR)
+                self.log(f"Data server error: {e}", level=logging.ERROR)
 
         self.data_server_thread = threading.Thread(target=run_server, daemon=True)
         self.data_server_thread.start()
-        self.log(f"Serveur de données démarré sur http://localhost:{port}")
-        return True, f"Serveur de données démarré sur http://localhost:{port}"
+        self.log(f"Data server started on http://localhost:{port}")
+        return True, f"Data server started on http://localhost:{port}"
 
     def stop_data_server(self) -> None:
         """Shut down the data server and clean up its thread."""
@@ -132,7 +132,7 @@ class SuperSplatEngine(BaseEngine):
             self.httpd.shutdown()
             self.httpd.server_close()
             self.httpd = None
-            self.log("Data server arrêté")
+            self.log("Data server stopped")
         if self.data_server_thread:
             self.data_server_thread.join(timeout=1)
             self.data_server_thread = None

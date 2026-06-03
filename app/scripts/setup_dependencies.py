@@ -199,20 +199,20 @@ class DependencyManager:
                 auto_update = config.get(f"{name}_auto_update", engine.auto_update_default) or cfg_section.get(f"{name}_auto_update", engine.auto_update_default)
 
                 if startup and engine.ask_before_update:
-                    print(f"\n>>> Mise à jour disponible pour {name.capitalize()} ({local_clean} → {remote})")
+                    print(f"\n>>> Update available for {name.capitalize()} ({local_clean} → {remote})")
                     try:
-                        answer = input(f"    Mettre à jour maintenant ? (o/n) : ").strip().lower()
+                        answer = input(f"    Update now? (y/n) : ").strip().lower()
                     except EOFError:
                         answer = "n"
                     if answer in ("o", "y", "oui", "yes"):
-                        print(f">>> Mise à jour de {name.capitalize()}...")
+                        print(f">>> Updating {name.capitalize()}...")
                         try:
                             engine.install()
-                            print(f"✅ {name.capitalize()} mis à jour.")
+                            print(f"✅ {name.capitalize()} updated.")
                         except Exception as e:
-                            print(f"❌ Échec de la mise à jour de {name}: {e}")
+                            print(f"❌ Update failed for {name}: {e}")
                     else:
-                        print(f"    Mise à jour de {name.capitalize()} ignorée.")
+                        print(f"    Update of {name.capitalize()} skipped.")
                 elif startup and auto_update:
                      print(f">>> Auto-updating {name.capitalize()}...")
                      try:
@@ -344,13 +344,13 @@ class BrushEngineDep(EngineDependency):
 
         if build_mode == "source":
             head = remote_ref or "HEAD"
-            print(f"Mode source sélectionné — compilation depuis HEAD ({head[:7]})...")
+            print(f"Source mode selected — compiling from HEAD ({head[:7]})...")
             if not self._install_from_source(head):
-                print("❌ Compilation source échouée. Relancez après avoir vérifié votre installation Rust/cargo.")
+                print("❌ Source compilation failed. Retry after checking your Rust/cargo installation.")
         else:
-            print(f"Mode release sélectionné ({release_version}). Téléchargement...")
+            print(f"Release mode selected ({release_version}). Downloading...")
             if not self._install_from_release(release_version):
-                print("❌ Téléchargement release échoué. Vérifiez votre connexion.")
+                print("❌ Release download failed. Check your connection.")
 
     def _install_from_release(self, version: str) -> bool:
         import platform
@@ -577,17 +577,17 @@ class ColmapBrewDep(EngineDependency):
 
     def install(self):
         if not shutil.which("brew"):
-            print("❌ Homebrew requis pour mettre à jour COLMAP.")
+            print("❌ Homebrew required to update COLMAP.")
             return
         try:
             if self.is_installed():
-                print("Mise à jour de COLMAP via Homebrew...")
+                print("Updating COLMAP via Homebrew...")
                 subprocess.check_call(["brew", "upgrade", "colmap"])
             else:
-                print("Installation de COLMAP via Homebrew...")
+                print("Installing COLMAP via Homebrew...")
                 subprocess.check_call(["brew", "install", "colmap"])
         except subprocess.CalledProcessError:
-            print("⚠️ brew upgrade/install colmap a échoué (peut-être déjà à jour).")
+            print("⚠️ brew upgrade/install colmap failed (may already be up to date).")
 
 def install_system_dependencies(check_only=False):
     print("--- System Dependency Check (Homebrew) ---")
@@ -685,7 +685,7 @@ def get_remote_version(repo_url):
         if output:
             return output.split()[0]
     except Exception as e:
-        print(f"Attention: Impossible de verifier la version distante pour {repo_url}: {e}")
+        print(f"Warning: Could not check remote version for {repo_url}: {e}")
     return None
 
 def get_local_version(version_file: Path):
@@ -702,7 +702,7 @@ def save_local_version(version_file: Path, version):
             version_file.parent.mkdir(parents=True, exist_ok=True)
             version_file.write_text(version)
         except Exception as e:
-            print(f"Attention: Impossible d'enregistrer la version locale: {e}")
+            print(f"Warning: Could not save local version: {e}")
 
 # --- CHECKERS ---
 

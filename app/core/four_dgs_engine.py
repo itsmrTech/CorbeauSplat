@@ -55,7 +55,7 @@ class FourDGSEngine(BaseEngine):
 
         # 1. Feature Extraction
         self.log("--- COLMAP: Feature Extraction ---")
-        self.status("Extraction des features (COLMAP)...")
+        self.status("Extracting features (COLMAP)...")
         cmd_extract = [
             self.colmap, "feature_extractor",
             "--database_path", str(db_path),
@@ -67,7 +67,7 @@ class FourDGSEngine(BaseEngine):
         if self._execute_command(cmd_extract) != 0: return False
         
         self.log("--- COLMAP: Feature Matching ---")
-        self.status("Matching des features...")
+        self.status("Matching features...")
         cmd_match = [
             self.colmap, "exhaustive_matcher",
             "--database_path", str(db_path),
@@ -77,7 +77,7 @@ class FourDGSEngine(BaseEngine):
         
         # 3. Mapper
         self.log("--- COLMAP: Mapper (Sparse Reconstruction) ---")
-        self.status("Reconstruction 3D (Mapper)...")
+        self.status("3D reconstruction (Mapper)...")
         cmd_mapper = [
             self.colmap, "mapper",
             "--database_path", str(db_path),
@@ -93,16 +93,16 @@ class FourDGSEngine(BaseEngine):
         return True
 
     def process_dataset(self, videos_dir, output_dir, fps=5):
-        self.log(f"Scan du dossier : {videos_dir}")
+        self.log(f"Scanning folder: {videos_dir}")
         supported_ext = (".mp4", ".mov", ".avi", ".mkv")
         videos_path = Path(videos_dir)
         videos = sorted([f for f in videos_path.iterdir() if f.suffix.lower() in supported_ext])
         
         if not videos:
-            self.log("Aucune vidéo trouvée.")
+            self.log("No video found.")
             return False
             
-        self.log(f"Trouvé {len(videos)} vidéos. Début extraction...")
+        self.log(f"Found {len(videos)} videos. Starting extraction...")
         
         images_root = Path(output_dir) / "images"
         images_root.mkdir(parents=True, exist_ok=True)
@@ -114,15 +114,15 @@ class FourDGSEngine(BaseEngine):
             cam_dir = images_root / cam_name
             
             self.log(f"Extraction {vid_path.name} -> {cam_name} ({fps} fps)...")
-            self.status(f"Extraction des frames ({vid_path.name})...")
+            self.status(f"Extracting frames ({vid_path.name})...")
             if not self.extract_frames(vid_path, cam_dir, fps):
                 return False
                 
-        self.log("Extraction terminée.")
+        self.log("Extraction complete.")
         
         if self.check_nerfstudio():
-            self.log("ns-process-data détecté. Lancement du processing Nerfstudio...")
-            self.status("Traitement Nerfstudio en cours...")
+            self.log("ns-process-data detected. Starting Nerfstudio processing...")
+            self.status("Processing Nerfstudio...")
             
             cmd_ns = [
                 "ns-process-data", "images",
@@ -132,10 +132,10 @@ class FourDGSEngine(BaseEngine):
             ]
             
             if self._execute_command(cmd_ns) != 0:
-                self.log("Echec ns-process-data.")
+                self.log("ns-process-data failed.")
                 return False
             
             return True
         else:
-            self.log("Nerfstudio non trouvé. Lancement mode dégradé (COLMAP manuel uniquement).")
+            self.log("Nerfstudio not found. Starting degraded mode (manual COLMAP only).")
             return self.run_colmap(output_dir)

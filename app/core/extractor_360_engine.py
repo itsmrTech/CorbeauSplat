@@ -113,7 +113,7 @@ class Extractor360Engine(BaseEngine):
 
         if check_cancel_callback and check_cancel_callback():
             if log_callback:
-                log_callback("Processus arrêté par l'utilisateur.")
+                log_callback("Process cancelled by user.")
             return False
 
         if status_callback:

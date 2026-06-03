@@ -58,7 +58,7 @@ class SessionManager:
             with open(self.get_session_file(), 'w') as f:
                 json.dump(state, f, indent=2)
         except OSError as e:
-            logger.error("Erreur sauvegarde session: %s", e)
+            logger.error("Session save error: %s", e)
 
     def load(self):
         session_file = self.get_session_file()
@@ -90,7 +90,7 @@ class SessionManager:
                         else:
                             tab.set_params(state[key])
         except (OSError, json.JSONDecodeError) as e:
-            logger.error("Erreur chargement session: %s", e)
+            logger.error("Session load error: %s", e)
 
 
 class AppLifecycle:
@@ -160,7 +160,7 @@ class AppLifecycle:
             for p in root_dir.glob("config.sync-conflict-*"):
                 to_delete.append(p)
         
-        logger.info("Reset Factory %s initié sur: %s", "DEEP" if deep else "LIGHT", root_dir)
+        logger.info("Reset Factory %s initiated on: %s", "DEEP" if deep else "LIGHT", root_dir)
 
         # Spawn a standalone Python subprocess to delete dirs + relaunch
         import json, tempfile

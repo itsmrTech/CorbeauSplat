@@ -104,9 +104,9 @@ def get_parser():
         description="CorbeauSplat — Pipeline Gaussian Splatting",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
-            "Sans argument, l'interface graphique est lancée.\n"
-            "Chaque sous-commande a sa propre aide : main.py <commande> --help\n\n"
-            "Exemples :\n"
+            "Without arguments, the graphical interface is launched.\n"
+            "Each subcommand has its own help: main.py <command> --help\n\n"
+            "Examples:\n"
             "  python3 main.py pipeline -i video.mp4 -o ~/projets --type video --preset dense\n"
             "  python3 main.py colmap   -i video.mp4 -o ~/projets\n"
             "  python3 main.py brush    -i ~/projets/scene -o ~/projets/scene --preset dense\n"
@@ -117,182 +117,182 @@ def get_parser():
             "  python3 main.py extract360 -i 360.mp4 -o ~/out\n"
         ),
     )
-    parser.add_argument("--gui", action="store_true", help="Force le lancement de l'interface graphique")
+    parser.add_argument("--gui", action="store_true", help="Force the graphical interface to launch")
 
     subs = parser.add_subparsers(dest="command", metavar="COMMANDE")
 
     # ── pipeline ──────────────────────────────────────────────────────────────
     p = subs.add_parser(
         "pipeline",
-        help="Pipeline complet : COLMAP → Brush en une seule commande",
+        help="Full pipeline: COLMAP → Brush in a single command",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
-            "Exemples :\n"
-            "  # Depuis une vidéo\n"
+            "Examples:\n"
+            "  # From a video\n"
             "  python3 main.py pipeline -i video.mp4 -o ~/projets --type video\n\n"
-            "  # Depuis des photos, preset haute qualité\n"
+            "  # From photos, high-quality preset\n"
             "  python3 main.py pipeline -i ~/photos -o ~/projets --preset dense\n\n"
-            "  # Avec Glomap et un nom de projet\n"
+            "  # With Glomap and a project name\n"
             "  python3 main.py pipeline -i ~/photos -o ~/projets --project_name scene --use_glomap\n"
         ),
     )
-    p.add_argument("--input",  "-i", required=True, help="Vidéo ou dossier d'images source")
-    p.add_argument("--output", "-o", required=True, help="Dossier de sortie parent")
-    p.add_argument("--project_name", default="Untitled", help="Nom du sous-dossier projet (défaut: Untitled)")
+    p.add_argument("--input",  "-i", required=True, help="Source video or image folder")
+    p.add_argument("--output", "-o", required=True, help="Parent output folder")
+    p.add_argument("--project_name", default="Untitled", help="Project subfolder name (default: Untitled)")
     # COLMAP
     p.add_argument("--type", choices=["images", "video"], default="images",
-                   help="Type d'entrée (défaut: images)")
-    p.add_argument("--fps",  type=int, default=5,   help="FPS d'extraction vidéo (défaut: 5)")
+                   help="Input type (default: images)")
+    p.add_argument("--fps",  type=int, default=5,   help="Video extraction FPS (default: 5)")
     p.add_argument("--camera_model", default="SIMPLE_RADIAL",
                    choices=["SIMPLE_PINHOLE","PINHOLE","SIMPLE_RADIAL","RADIAL","OPENCV","OPENCV_FISHEYE"],
-                   help="Modèle de caméra COLMAP (défaut: SIMPLE_RADIAL)")
-    p.add_argument("--undistort",  action="store_true", help="Undistortion après reconstruction")
-    p.add_argument("--use_glomap", action="store_true", help="Utiliser Glomap au lieu du mapper COLMAP")
+                   help="COLMAP camera model (default: SIMPLE_RADIAL)")
+    p.add_argument("--undistort",  action="store_true", help="Undistort images after reconstruction")
+    p.add_argument("--use_glomap", action="store_true", help="Use Glomap instead of the COLMAP mapper")
     p.add_argument("--matcher_type", choices=["exhaustive","sequential","vocab_tree"], default="exhaustive",
-                   help="Stratégie de matching (défaut: exhaustive)")
+                   help="Matching strategy (default: exhaustive)")
     p.add_argument("--max_image_size", type=int, default=3200,
-                   help="Résolution max des images pour COLMAP (défaut: 3200)")
+                   help="Max image resolution for COLMAP (default: 3200)")
     # Brush
     p.add_argument("--preset", choices=["default","fast","std","dense"], default="default",
-                   help="Preset d'entraînement Brush (défaut: default)")
+                   help="Brush training preset (default: default)")
     p.add_argument("--iterations", type=int,   default=None, metavar="N",
-                   help="Nb total d'itérations Brush (remplace le preset)")
+                   help="Total Brush iterations (overrides preset)")
     p.add_argument("--sh_degree",  type=int,   default=None, choices=range(1,5),
-                   help="Degré Spherical Harmonics 1-4 (défaut: 3)")
+                   help="Spherical Harmonics degree 1-4 (default: 3)")
     p.add_argument("--device", default="auto",
-                   choices=["auto","mps","cuda","cpu"], help="Device Brush (défaut: auto)")
-    p.add_argument("--with_viewer", action="store_true", help="Ouvrir le viewer interactif après entraînement")
-    p.add_argument("--ply_name",    default=None,        help="Nom du fichier PLY de sortie")
+                   choices=["auto","mps","cuda","cpu"], help="Brush device (default: auto)")
+    p.add_argument("--with_viewer", action="store_true", help="Open the interactive viewer after training")
+    p.add_argument("--ply_name",    default=None,        help="Output PLY filename")
 
     # ── colmap ────────────────────────────────────────────────────────────────
-    p = subs.add_parser("colmap", help="Pipeline COLMAP (vidéo/images → dataset)")
-    p.add_argument("--input",  "-i", required=True, help="Vidéo ou dossier d'images source")
-    p.add_argument("--output", "-o", required=True, help="Dossier de sortie")
-    p.add_argument("--type", choices=["images", "video"], default="images", help="Type d'entrée (défaut: images)")
-    p.add_argument("--fps",  type=int, default=5,         help="FPS d'extraction vidéo (défaut: 5)")
-    p.add_argument("--project_name", default="Untitled",  help="Nom du sous-dossier projet")
+    p = subs.add_parser("colmap", help="COLMAP pipeline (video/images → dataset)")
+    p.add_argument("--input",  "-i", required=True, help="Source video or image folder")
+    p.add_argument("--output", "-o", required=True, help="Output folder")
+    p.add_argument("--type", choices=["images", "video"], default="images", help="Input type (default: images)")
+    p.add_argument("--fps",  type=int, default=5,         help="Video extraction FPS (default: 5)")
+    p.add_argument("--project_name", default="Untitled",  help="Project subfolder name")
     # Options de base
     p.add_argument("--camera_model", default="SIMPLE_RADIAL",
                    choices=["SIMPLE_PINHOLE","PINHOLE","SIMPLE_RADIAL","RADIAL","OPENCV","OPENCV_FISHEYE"],
-                   help="Modèle de caméra COLMAP (défaut: SIMPLE_RADIAL)")
-    p.add_argument("--undistort",  action="store_true", help="Undistortion après reconstruction")
-    p.add_argument("--use_glomap", action="store_true", help="Utiliser Glomap au lieu du mapper COLMAP")
+                   help="COLMAP camera model (default: SIMPLE_RADIAL)")
+    p.add_argument("--undistort",  action="store_true", help="Undistort images after reconstruction")
+    p.add_argument("--use_glomap", action="store_true", help="Use Glomap instead of the COLMAP mapper")
     # Feature extraction
-    p.add_argument("--no_single_camera",  action="store_true", help="Désactiver le mode caméra unique")
-    p.add_argument("--max_image_size",    type=int,   default=3200, help="Résolution max des images (défaut: 3200)")
-    p.add_argument("--max_num_features",  type=int,   default=8192, help="Nb max de features par image (défaut: 8192)")
-    p.add_argument("--estimate_affine_shape", action="store_true", help="Estimer la forme affine des features")
-    p.add_argument("--no_domain_size_pooling", action="store_true", help="Désactiver le domain size pooling")
+    p.add_argument("--no_single_camera",  action="store_true", help="Disable single camera mode")
+    p.add_argument("--max_image_size",    type=int,   default=3200, help="Max image resolution (default: 3200)")
+    p.add_argument("--max_num_features",  type=int,   default=8192, help="Max features per image (default: 8192)")
+    p.add_argument("--estimate_affine_shape", action="store_true", help="Estimate affine shape of features")
+    p.add_argument("--no_domain_size_pooling", action="store_true", help="Disable domain size pooling")
     # Feature matching
     p.add_argument("--matcher_type", choices=["exhaustive","sequential","vocab_tree"], default="exhaustive",
-                   help="Stratégie de matching (défaut: exhaustive)")
-    p.add_argument("--max_ratio",    type=float, default=0.8,  help="Ratio max Lowe (défaut: 0.8)")
-    p.add_argument("--max_distance", type=float, default=0.7,  help="Distance max (défaut: 0.7)")
-    p.add_argument("--no_cross_check", action="store_true", help="Désactiver le cross-check")
+                   help="Matching strategy (default: exhaustive)")
+    p.add_argument("--max_ratio",    type=float, default=0.8,  help="Max Lowe ratio (default: 0.8)")
+    p.add_argument("--max_distance", type=float, default=0.7,  help="Max distance (default: 0.7)")
+    p.add_argument("--no_cross_check", action="store_true", help="Disable cross-check")
     # Mapper
-    p.add_argument("--min_model_size",    type=int, default=10, help="Taille min du modèle (défaut: 10)")
-    p.add_argument("--min_num_matches",   type=int, default=15, help="Nb min de matches (défaut: 15)")
-    p.add_argument("--multiple_models",   action="store_true",  help="Autoriser plusieurs modèles")
-    p.add_argument("--no_refine_focal",   action="store_true",  help="Ne pas affiner la focale")
-    p.add_argument("--refine_principal",  action="store_true",  help="Affiner le point principal")
-    p.add_argument("--no_refine_extra",   action="store_true",  help="Ne pas affiner les params extra")
+    p.add_argument("--min_model_size",    type=int, default=10, help="Min model size (default: 10)")
+    p.add_argument("--min_num_matches",   type=int, default=15, help="Min number of matches (default: 15)")
+    p.add_argument("--multiple_models",   action="store_true",  help="Allow multiple models")
+    p.add_argument("--no_refine_focal",   action="store_true",  help="Do not refine focal length")
+    p.add_argument("--refine_principal",  action="store_true",  help="Refine principal point")
+    p.add_argument("--no_refine_extra",   action="store_true",  help="Do not refine extra params")
 
     # ── brush ─────────────────────────────────────────────────────────────────
-    p = subs.add_parser("brush", help="Entraînement Gaussian Splat (Brush)")
-    p.add_argument("--input",  "-i", required=True, help="Dossier dataset COLMAP")
-    p.add_argument("--output", "-o", required=True, help="Dossier de sortie")
+    p = subs.add_parser("brush", help="Gaussian Splat training (Brush)")
+    p.add_argument("--input",  "-i", required=True, help="COLMAP dataset folder")
+    p.add_argument("--output", "-o", required=True, help="Output folder")
     p.add_argument("--preset", choices=["default","fast","std","dense"], default="default",
-                   help="Preset de paramètres (défaut: default)")
+                   help="Parameter preset (default: default)")
     p.add_argument("--iterations", type=int,   default=None, metavar="N",
-                   help="Nb total d'itérations (défaut preset: 30000)")
+                   help="Total iterations (preset default: 30000)")
     p.add_argument("--sh_degree",  type=int,   default=None, choices=range(1,5),
-                   help="Degré Spherical Harmonics 1-4 (défaut: 3)")
+                   help="Spherical Harmonics degree 1-4 (default: 3)")
     p.add_argument("--device",     default="auto",
-                   choices=["auto","mps","cuda","cpu"], help="Device (défaut: auto)")
-    p.add_argument("--refine_mode", action="store_true", help="Mode Refine (reprend depuis dernier checkpoint)")
-    p.add_argument("--with_viewer", action="store_true", help="Ouvrir le viewer interactif")
-    p.add_argument("--ply_name",   default=None,      help="Nom du fichier PLY de sortie")
-    p.add_argument("--custom_args", default=None,     help="Arguments supplémentaires passés à brush")
+                   choices=["auto","mps","cuda","cpu"], help="Device (default: auto)")
+    p.add_argument("--refine_mode", action="store_true", help="Refine mode (resumes from last checkpoint)")
+    p.add_argument("--with_viewer", action="store_true", help="Open the interactive viewer")
+    p.add_argument("--ply_name",   default=None,      help="Output PLY filename")
+    p.add_argument("--custom_args", default=None,     help="Additional arguments passed to brush")
     # Paramètres avancés (None = utilise la valeur du preset ou du défaut)
-    p.add_argument("--start_iter",              type=int,   default=None, help="Itération de départ (défaut: 0)")
-    p.add_argument("--refine_every",            type=int,   default=None, help="Densification toutes les N iters (défaut: 200)")
-    p.add_argument("--growth_grad_threshold",   type=float, default=None, help="Seuil gradient densification (défaut: 0.003)")
-    p.add_argument("--growth_select_fraction",  type=float, default=None, help="Fraction sélection densification (défaut: 0.2)")
-    p.add_argument("--growth_stop_iter",        type=int,   default=None, help="Arrêt de la densification (défaut: 15000)")
-    p.add_argument("--max_splats",              type=int,   default=None, help="Nb max de gaussiennes (défaut: 10 000 000)")
-    p.add_argument("--checkpoint_interval",     type=int,   default=None, help="Sauvegarder tous les N iters (défaut: 7000)")
-    p.add_argument("--max_resolution",          type=int,   default=None, help="Résolution max entraînement 0=auto (défaut: 0)")
+    p.add_argument("--start_iter",              type=int,   default=None, help="Starting iteration (default: 0)")
+    p.add_argument("--refine_every",            type=int,   default=None, help="Densification every N iters (default: 200)")
+    p.add_argument("--growth_grad_threshold",   type=float, default=None, help="Densification gradient threshold (default: 0.003)")
+    p.add_argument("--growth_select_fraction",  type=float, default=None, help="Densification selection fraction (default: 0.2)")
+    p.add_argument("--growth_stop_iter",        type=int,   default=None, help="Stop densification at iteration (default: 15000)")
+    p.add_argument("--max_splats",              type=int,   default=None, help="Max number of Gaussians (default: 10 000 000)")
+    p.add_argument("--checkpoint_interval",     type=int,   default=None, help="Save every N iters (default: 7000)")
+    p.add_argument("--max_resolution",          type=int,   default=None, help="Max training resolution, 0=auto (default: 0)")
 
     # ── sharp ─────────────────────────────────────────────────────────────────
-    p = subs.add_parser("sharp", help="Single Image/Vidéo → 3D Splat (ML-Sharp)")
-    p.add_argument("--input",  "-i", required=True, help="Image, dossier d'images ou vidéo")
-    p.add_argument("--output", "-o", required=True, help="Dossier de sortie")
+    p = subs.add_parser("sharp", help="Single Image/Video → 3D Splat (ML-Sharp)")
+    p.add_argument("--input",  "-i", required=True, help="Image, image folder, or video")
+    p.add_argument("--output", "-o", required=True, help="Output folder")
     p.add_argument("--mode",   choices=["image","video"], default="image",
-                   help="Mode : image unique ou vidéo (défaut: image)")
-    p.add_argument("--checkpoint", "-c", default=None, help="Chemin vers un checkpoint .pt")
+                   help="Mode: single image or video (default: image)")
+    p.add_argument("--checkpoint", "-c", default=None, help="Path to a .pt checkpoint")
     p.add_argument("--device", default="default",
-                   choices=["default","mps","cpu","cuda"], help="Device (défaut: default)")
+                   choices=["default","mps","cpu","cuda"], help="Device (default: default)")
     p.add_argument("--skip_frames", type=int, default=1,
-                   help="[mode vidéo] Traiter 1 frame sur N (défaut: 1)")
+                   help="[video mode] Process 1 frame out of N (default: 1)")
     p.add_argument("--upscale", action="store_true",
-                   help="Upscaler les images avant prédiction (requiert upscayl-bin)")
-    p.add_argument("--verbose", action="store_true", help="Afficher la sortie détaillée de Sharp")
+                   help="Upscale images before prediction (requires upscayl-bin)")
+    p.add_argument("--verbose", action="store_true", help="Show detailed Sharp output")
 
     # ── view ──────────────────────────────────────────────────────────────────
-    p = subs.add_parser("view", help="Visualiser un .ply dans SuperSplat")
-    p.add_argument("--input",     "-i", required=True, help="Fichier .ply ou dossier")
-    p.add_argument("--port",      type=int, default=3000, help="Port SuperSplat (défaut: 3000)")
-    p.add_argument("--data_port", type=int, default=8000, help="Port serveur données (défaut: 8000)")
-    p.add_argument("--no_ui",     action="store_true", help="Masquer l'interface SuperSplat")
-    p.add_argument("--cam_pos",   default=None, metavar="X,Y,Z", help="Position initiale caméra")
-    p.add_argument("--cam_rot",   default=None, metavar="X,Y,Z", help="Rotation initiale caméra (degrés)")
+    p = subs.add_parser("view", help="Visualize a .ply in SuperSplat")
+    p.add_argument("--input",     "-i", required=True, help=".ply file or folder")
+    p.add_argument("--port",      type=int, default=3000, help="SuperSplat port (default: 3000)")
+    p.add_argument("--data_port", type=int, default=8000, help="Data server port (default: 8000)")
+    p.add_argument("--no_ui",     action="store_true", help="Hide the SuperSplat interface")
+    p.add_argument("--cam_pos",   default=None, metavar="X,Y,Z", help="Initial camera position")
+    p.add_argument("--cam_rot",   default=None, metavar="X,Y,Z", help="Initial camera rotation (degrees)")
 
     # ── upscale ───────────────────────────────────────────────────────────────
-    p = subs.add_parser("upscale", help="Upscale d'images via upscayl-bin (NCNN)")
-    p.add_argument("--input",  "-i", required=True, help="Image ou dossier d'images")
-    p.add_argument("--output", "-o", required=True, help="Dossier de sortie")
+    p = subs.add_parser("upscale", help="Image upscaling via upscayl-bin (NCNN)")
+    p.add_argument("--input",  "-i", required=True, help="Image or image folder")
+    p.add_argument("--output", "-o", required=True, help="Output folder")
     p.add_argument("--model",  default="realesrgan-x4plus",
-                   help="ID du modèle upscayl (défaut: realesrgan-x4plus)")
+                   help="upscayl model ID (default: realesrgan-x4plus)")
     p.add_argument("--scale",  type=int, choices=[2, 3, 4], default=4,
-                   help="Facteur d'upscale (défaut: 4)")
+                   help="Upscale factor (default: 4)")
     p.add_argument("--format", choices=["png","jpg","webp"], default="png",
-                   help="Format de sortie (défaut: png)")
+                   help="Output format (default: png)")
     p.add_argument("--tile",        type=int, default=0,
-                   help="Taille des tuiles VRAM en px, 0=auto (défaut: 0)")
-    p.add_argument("--tta",         action="store_true", help="Activer le Test-Time Augmentation")
+                   help="VRAM tile size in px, 0=auto (default: 0)")
+    p.add_argument("--tta",         action="store_true", help="Enable Test-Time Augmentation")
     p.add_argument("--compression", type=int, default=0,
-                   help="Niveau de compression sortie 0-9 (défaut: 0)")
+                   help="Output compression level 0-9 (default: 0)")
 
     # ── 4dgs ──────────────────────────────────────────────────────────────────
-    p = subs.add_parser("4dgs", help="Préparation dataset 4D Gaussian Splatting (Nerfstudio)")
+    p = subs.add_parser("4dgs", help="4D Gaussian Splatting dataset preparation (Nerfstudio)")
     p.add_argument("--input",  "-i", required=True,
-                   help="Dossier contenant les vidéos multi-caméras")
-    p.add_argument("--output", "-o", required=True, help="Dossier de sortie")
-    p.add_argument("--fps",    type=int, default=5,  help="FPS d'extraction vidéo (défaut: 5)")
+                   help="Folder containing multi-camera videos")
+    p.add_argument("--output", "-o", required=True, help="Output folder")
+    p.add_argument("--fps",    type=int, default=5,  help="Video extraction FPS (default: 5)")
     p.add_argument("--colmap_only", action="store_true",
-                   help="Lancer uniquement COLMAP sur un dataset déjà extrait")
+                   help="Run COLMAP only on an already-extracted dataset")
 
     # ── extract360 ────────────────────────────────────────────────────────────
-    p = subs.add_parser("extract360", help="Extraction vidéo 360° en multi-caméras COLMAP-ready")
-    p.add_argument("--input",  "-i", required=True, help="Fichier vidéo 360°")
-    p.add_argument("--output", "-o", required=True, help="Dossier de sortie")
+    p = subs.add_parser("extract360", help="Extract 360° video into COLMAP-ready multi-camera images")
+    p.add_argument("--input",  "-i", required=True, help="360° video file")
+    p.add_argument("--output", "-o", required=True, help="Output folder")
     p.add_argument("--interval",        type=float, default=1.0,
-                   help="Intervalle entre frames en secondes (défaut: 1.0)")
+                   help="Interval between frames in seconds (default: 1.0)")
     p.add_argument("--format",          default="jpg",
-                   help="Format image de sortie (défaut: jpg)")
+                   help="Output image format (default: jpg)")
     p.add_argument("--resolution",      type=int,   default=2048,
-                   help="Résolution des images extraites (défaut: 2048)")
+                   help="Resolution of extracted images (default: 2048)")
     p.add_argument("--camera_count",    type=int,   default=6,
-                   help="Nombre de caméras virtuelles (défaut: 6)")
+                   help="Number of virtual cameras (default: 6)")
     p.add_argument("--quality",         type=int,   default=95,
-                   help="Qualité JPEG 0-100 (défaut: 95)")
+                   help="JPEG quality 0-100 (default: 95)")
     p.add_argument("--layout",          default="equirectangular",
-                   help="Layout de projection (défaut: equirectangular)")
-    p.add_argument("--ai_mask",         action="store_true", help="Activer le masquage IA")
-    p.add_argument("--ai_skip",         action="store_true", help="Activer le saut IA")
-    p.add_argument("--adaptive",        action="store_true", help="Extraction adaptative au mouvement")
+                   help="Projection layout (default: equirectangular)")
+    p.add_argument("--ai_mask",         action="store_true", help="Enable AI masking")
+    p.add_argument("--ai_skip",         action="store_true", help="Enable AI frame skipping")
+    p.add_argument("--adaptive",        action="store_true", help="Motion-adaptive extraction")
     p.add_argument("--motion_threshold", type=float, default=0.3,
-                   help="Seuil de mouvement pour l'extraction adaptative (défaut: 0.3)")
+                   help="Motion threshold for adaptive extraction (default: 0.3)")
 
     return parser
 
@@ -424,7 +424,7 @@ def _run_sharp_video(args, engine, params):
     output_dir = _Path(args.output)
     skip = max(1, args.skip_frames)
 
-    print(f"Sharp vidéo : {video_path.name} (1 frame / {skip})")
+    print(f"Sharp video: {video_path.name} (1 frame / {skip})")
     print(tr("cli_output", args.output))
 
     frames_dir = output_dir / "temp_frames"
@@ -440,16 +440,16 @@ def _run_sharp_video(args, engine, params):
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        print(f"Erreur FFmpeg : {result.stderr}")
+        print(f"FFmpeg error: {result.stderr}")
         sys.exit(1)
 
     frames = sorted(frames_dir.glob("*.png"))
     total = len(frames)
     if total == 0:
-        print("Aucune frame extraite.")
+        print("No frames extracted.")
         sys.exit(1)
 
-    print(f"{total} frames extraites.")
+    print(f"{total} frames extracted.")
     success_count = 0
 
     try:
@@ -471,7 +471,7 @@ def _run_sharp_video(args, engine, params):
         if frames_dir.exists():
             shutil.rmtree(frames_dir)
 
-    print(f"Terminé : {success_count}/{total} frames converties.")
+    print(f"Complete: {success_count}/{total} frames converted.")
     if success_count == 0:
         sys.exit(1)
 
@@ -515,8 +515,8 @@ def run_supersplat(args):
     if url_params:
         url += "?" + "&".join(url_params)
 
-    print(f"\nAccédez à : {url}\n")
-    print("Appuyez sur Ctrl+C pour arrêter les serveurs.")
+    print(f"\nOpen: {url}\n")
+    print("Press Ctrl+C to stop the servers.")
 
     try:
         while True:
@@ -532,7 +532,7 @@ def run_upscale(args):
     engine = UpscaleEngine(logger_callback=print)
 
     if not engine.is_installed():
-        print("Erreur : upscayl-bin introuvable. Installez-le depuis l'onglet Upscale de l'interface graphique.")
+        print("Error: upscayl-bin not found. Install it from the Upscale tab in the graphical interface.")
         sys.exit(1)
 
     upsampler = engine.load_model(
@@ -544,14 +544,14 @@ def run_upscale(args):
         compression=args.compression,
     )
     if not upsampler:
-        print("Erreur : impossible de charger le modèle.")
+        print("Error: could not load model.")
         sys.exit(1)
 
     import os
     input_path = _Path(args.input)
     output_path = _Path(args.output)
 
-    print(f"Upscale x{args.scale} — modèle : {args.model}")
+    print(f"Upscale x{args.scale} — model: {args.model}")
     print(f"  Input  : {args.input}")
     print(f"  Output : {args.output}")
 
@@ -563,12 +563,12 @@ def run_upscale(args):
             )
         else:
             success = engine.upscale_image(str(input_path), str(output_path / input_path.name), upsampler)
-            msg = "Upscale terminé." if success else "Upscale échoué."
+            msg = "Upscale complete." if success else "Upscale failed."
     except KeyboardInterrupt:
         print(tr("cli_stopping"))
         sys.exit(0)
 
-    print(f"{'Succès' if success else 'Erreur'} : {msg}")
+    print(f"{'Success' if success else 'Error'}: {msg}")
     if not success:
         sys.exit(1)
 
@@ -579,16 +579,16 @@ def run_4dgs(args):
     engine = FourDGSEngine(logger_callback=print)
 
     if not args.colmap_only and not _Path(args.input).exists():
-        print(f"Erreur : dossier source introuvable : {args.input}")
+        print(f"Error: source folder not found: {args.input}")
         sys.exit(1)
 
-    print("Préparation dataset 4DGS")
+    print("Preparing 4DGS dataset")
     print(f"  Input  : {args.input}")
     print(f"  Output : {args.output}")
 
     try:
         if args.colmap_only:
-            print("Mode COLMAP uniquement.")
+            print("COLMAP-only mode.")
             success = engine.run_colmap(args.output)
         else:
             print(f"  FPS    : {args.fps}")
@@ -598,7 +598,7 @@ def run_4dgs(args):
         engine.stop()
         sys.exit(0)
 
-    print("Terminé avec succès." if success else "Erreur lors du traitement.")
+    print("Complete." if success else "Error during processing.")
     if not success:
         sys.exit(1)
 
@@ -609,7 +609,7 @@ def run_extract360(args):
     engine = Extractor360Engine(logger_callback=print)
 
     if not engine.is_installed():
-        print("Erreur : Extracteur 360° non installé. Activez-le depuis l'onglet 360° de l'interface graphique.")
+        print("Error: 360° extractor not installed. Enable it from the 360° tab in the graphical interface.")
         sys.exit(1)
 
     params = {
@@ -625,25 +625,25 @@ def run_extract360(args):
         "motion_threshold": args.motion_threshold,
     }
 
-    print("Extraction vidéo 360°")
+    print("360° video extraction")
     print(f"  Input       : {args.input}")
     print(f"  Output      : {args.output}")
     print(f"  Interval    : {args.interval}s")
-    print(f"  Résolution  : {args.resolution}px")
-    print(f"  Caméras     : {args.camera_count}")
+    print(f"  Resolution  : {args.resolution}px")
+    print(f"  Cameras     : {args.camera_count}")
 
     try:
         success = engine.run_extraction(
             args.input, args.output, params,
             log_callback=print,
-            progress_callback=lambda x: print(f"  Progression : {x}%"),
+            progress_callback=lambda x: print(f"  Progress: {x}%"),
         )
     except KeyboardInterrupt:
         print(tr("cli_stopping"))
         engine.stop()
         sys.exit(0)
 
-    print("Terminé avec succès." if success else "Erreur lors de l'extraction.")
+    print("Complete." if success else "Error during extraction.")
     if not success:
         sys.exit(1)
 
@@ -654,10 +654,10 @@ def run_pipeline(args):
     _sep = lambda title: print(f"\n{'─' * 50}\n  {title}\n{'─' * 50}")
 
     # ── Étape 1 : COLMAP ──────────────────────────────────────────────────────
-    _sep("Étape 1/2 — Reconstruction COLMAP")
+    _sep("Step 1/2 — COLMAP reconstruction")
     print(f"  Input       : {args.input}")
     print(f"  Output      : {args.output}")
-    print(f"  Projet      : {args.project_name}")
+    print(f"  Project     : {args.project_name}")
     print(f"  Type        : {args.type}")
     if args.type == "video":
         print(f"  FPS         : {args.fps}")
@@ -674,7 +674,7 @@ def run_pipeline(args):
         colmap_params, args.input, args.output, args.type, args.fps,
         project_name=args.project_name,
         logger_callback=print,
-        progress_callback=lambda x: print(f"  Progression : {x}%"),
+        progress_callback=lambda x: print(f"  Progress: {x}%"),
     )
 
     try:
@@ -685,14 +685,14 @@ def run_pipeline(args):
         sys.exit(0)
 
     if not success:
-        print(f"\nErreur COLMAP : {msg}")
+        print(f"\nCOLMAP error: {msg}")
         sys.exit(1)
 
     dataset_path = _Path(args.output) / args.project_name
-    print(f"\nDataset prêt : {dataset_path}")
+    print(f"\nDataset ready: {dataset_path}")
 
     # ── Étape 2 : Brush ───────────────────────────────────────────────────────
-    _sep("Étape 2/2 — Entraînement Brush")
+    _sep("Step 2/2 — Brush training")
 
     brush_params = dict(BRUSH_DEFAULTS)
 
@@ -721,9 +721,9 @@ def run_pipeline(args):
         sys.exit(0)
 
     if returncode == 0:
-        print(f"\nPipeline terminé. Splat disponible dans : {dataset_path}")
+        print(f"\nPipeline complete. Splat available in: {dataset_path}")
     else:
-        print(f"\nBrush a retourné une erreur (code {returncode}).")
+        print(f"\nBrush returned an error (code {returncode}).")
         sys.exit(1)
 
 
@@ -758,7 +758,7 @@ def main():
 
     missing_deps = check_dependencies()
     if missing_deps:
-        print(f"Attention : dépendances manquantes : {', '.join(missing_deps)}")
+        print(f"Warning: missing dependencies: {', '.join(missing_deps)}")
 
     handler = DISPATCH.get(args.command)
     if handler:

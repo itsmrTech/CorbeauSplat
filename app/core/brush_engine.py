@@ -45,9 +45,9 @@ class BrushEngine(BaseEngine):
         safe_input = self.validate_path(input_path)
         safe_output = self.validate_path(output_path)
         if not safe_input or not safe_output:
-            raise ValueError("Chemins invalides ou non sécurisés détectés.")
+            raise ValueError("Invalid or unsafe paths detected.")
         if not self.brush_bin:
-            raise RuntimeError("Exécutable 'brush' non trouvé.")
+            raise RuntimeError("'brush' executable not found.")
         params = params or {}
         cmd = [self.brush_bin]
         # Standard Options
@@ -89,11 +89,11 @@ class BrushEngine(BaseEngine):
                         safe_args.append(args_list[i + 1])
                         i += 1
                 else:
-                    self.log(f"Avertissement de sécurité: paramètre non autorisé ignoré ({arg})")
+                    self.log(f"Security warning: unauthorized parameter ignored ({arg})")
                 i += 1
             cmd.extend(safe_args)
         # Positional argument: source path
         cmd.append(str(safe_input))
         # Execute command via Template Method
-        self.log(f"Lancement Brush: {' '.join(cmd)}")
+        self.log(f"Starting Brush: {' '.join(cmd)}")
         return self._execute_command(cmd, env=env)
