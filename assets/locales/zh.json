@@ -39,6 +39,8 @@
     "check_domain": "域池化:",
     "group_match": "特征匹配",
     "lbl_match_type": "匹配类型:",
+    "lbl_gpu_streams": "GPU Match Streams:",
+    "tip_gpu_streams": "Number of parallel matching streams on the GPU. Higher values use more of the GPU (faster on powerful GPUs) without changing match quality. Lower it if you hit memory limits. 1 = COLMAP default.",
     "lbl_max_ratio": "最大比率:",
     "lbl_max_dist": "最大距离:",
     "check_cross": "交叉检查:",
