@@ -17,12 +17,15 @@ _IMAGE_EXTS = {'.jpg', '.jpeg', '.png'}
 # COLMAP vocabulary tree used by the vocab_tree matcher. The 256K-word tree is
 # COLMAP's own default and suits scenes from ~1K to ~10K images. It is fetched
 # on demand into the engines/ directory (the same place resolve_binary searches)
-# and reused across runs. The official COLMAP release is tried first, with the
-# demuc.de mirror as a fallback.
-_VOCAB_TREE_FILENAME = "vocab_tree_flickr100K_words256K.bin"
+# and reused across runs.
+#
+# COLMAP switched its vocabulary tree format from FLANN to FAISS in May 2025, so
+# current COLMAP builds can only read the "faiss" tree. The legacy FLANN tree
+# (vocab_tree_flickr100K_words256K.bin) makes newer COLMAP abort with
+# "Failed to read faiss index", so we download the faiss variant instead.
+_VOCAB_TREE_FILENAME = "vocab_tree_faiss_flickr100K_words256K.bin"
 _VOCAB_TREE_URLS = (
-    "https://github.com/colmap/colmap/releases/download/3.11.1/vocab_tree_flickr100K_words256K.bin",
-    "https://demuc.de/colmap/vocab_tree_flickr100K_words256K.bin",
+    "https://github.com/colmap/colmap/releases/download/3.11.1/vocab_tree_faiss_flickr100K_words256K.bin",
 )
 
 
@@ -522,14 +525,14 @@ class ColmapEngine(BaseEngine):
                 elif "Matching block" in line_str:
                     parts = line_str.split("Matching block")
                     if len(parts) > 1:
-                        self.status(f"{status_prefix} : bloc {parts[1].strip()}")
+                        self.status(f"{status_prefix} : block {parts[1].strip()}")
                 elif "Registering image" in line_str:
                     parts = line_str.split("Registering image")
                     if len(parts) > 1:
                         img_info = parts[1].split('(')[0].strip()
-                        self.status(f"{status_prefix} : ajout image {img_info}")
+                        self.status(f"{status_prefix} : adding image {img_info}")
                 elif "Bundle adjustment report" in line_str:
-                    self.status(f"{status_prefix} : optimisation globale...")
+                    self.status(f"{status_prefix} : global optimization...")
                 elif "Undistorting image" in line_str:
                     parts = line_str.split("Undistorting image")
                     if len(parts) > 1:
@@ -540,14 +543,14 @@ class ColmapEngine(BaseEngine):
             if self.is_cancelled(): return False
                 
             if returncode == 0:
-                self.log(f"{description} termine")
+                self.log(f"{description} complete")
                 return True
             else:
-                self.log(f"{description} echoue")
+                self.log(f"{description} failed")
                 return False
-                
+
         except FileNotFoundError:
-            self.log(f"COLMAP non trouve. Installez avec: brew install colmap")
+            self.log("COLMAP not found. Install with: brew install colmap")
             return False
 
     def feature_extraction(self, database_path: str, images_dir: str) -> bool:
@@ -567,7 +570,7 @@ class ColmapEngine(BaseEngine):
         ]
         if image_list_path:
             cmd.extend(['--image_list_path', str(image_list_path)])
-        return self.run_command(cmd, "Extraction des features", status_prefix="Analyse")
+        return self.run_command(cmd, "Feature extraction", status_prefix="Analysis")
 
     def _write_sorted_image_list(self, images_dir: str) -> Optional[Path]:
         """Write a deterministic COLMAP image list so sequential matching follows frame order."""
@@ -669,44 +672,43 @@ class ColmapEngine(BaseEngine):
 
         The vocab_tree matcher requires a pre-trained vocabulary tree .bin file.
         We look for it in the engines/ directory (the same location
-        resolve_binary searches) and download it from COLMAP's official release
-        if missing, falling back to the demuc.de mirror. Returns the path on
-        success, or None if the tree could not be obtained.
+        resolve_binary searches) and download COLMAP's default faiss tree if it
+        is missing. Returns the path on success, or None if the tree could not
+        be obtained.
         """
         engines_dir = resolve_project_root() / "engines"
         vocab_path = engines_dir / _VOCAB_TREE_FILENAME
 
         if vocab_path.exists() and vocab_path.stat().st_size > 0:
-            self.log(f"Vocabulary tree trouve : {vocab_path}")
+            self.log(f"Vocabulary tree found: {vocab_path}")
             return vocab_path
 
         import urllib.request
 
         engines_dir.mkdir(parents=True, exist_ok=True)
         tmp_path = vocab_path.with_suffix(vocab_path.suffix + ".part")
-        self.log(f"Vocabulary tree absent, telechargement de {_VOCAB_TREE_FILENAME}...")
+        self.log(f"Vocabulary tree missing, downloading {_VOCAB_TREE_FILENAME}...")
 
         for url in _VOCAB_TREE_URLS:
             if self.is_cancelled():
                 return None
             try:
-                self.log(f"Telechargement du vocabulary tree depuis {url}")
+                self.log(f"Downloading vocabulary tree from {url}")
                 req = urllib.request.Request(url, headers={"User-Agent": "CorbeauSplat"})
                 with urllib.request.urlopen(req, timeout=120) as resp, open(tmp_path, "wb") as f:
                     shutil.copyfileobj(resp, f)
                 if tmp_path.stat().st_size == 0:
-                    raise IOError("fichier telecharge vide")
+                    raise IOError("downloaded file is empty")
                 tmp_path.replace(vocab_path)
-                self.log(f"Vocabulary tree pret : {vocab_path}")
+                self.log(f"Vocabulary tree ready: {vocab_path}")
                 return vocab_path
             except Exception as e:
-                self.log(f"Avertissement : echec du telechargement depuis {url} : {e}")
+                self.log(f"Warning: vocabulary tree download failed from {url}: {e}")
                 tmp_path.unlink(missing_ok=True)
 
         self.log(
-            "ERREUR : vocabulary tree introuvable. Telechargez "
-            f"'{_VOCAB_TREE_FILENAME}' manuellement dans le dossier 'engines/' "
-            "ou choisissez un autre type de matching."
+            f"ERROR: vocabulary tree unavailable. Download '{_VOCAB_TREE_FILENAME}' "
+            "manually into the 'engines/' folder, or choose a different matching type."
         )
         return None
 
@@ -728,39 +730,39 @@ class ColmapEngine(BaseEngine):
                 '--SequentialMatching.overlap', str(self.params.sequential_overlap),
                 '--SequentialMatching.quadratic_overlap', '1',
             ]
-            description = "Matching Sequentiel"
+            description = "Sequential Matching"
         elif matcher == 'vocab_tree':
             vocab_path = self._ensure_vocab_tree()
             if vocab_path is None:
                 # The user explicitly chose Vocab Tree matching. Do NOT fall back
                 # to exhaustive matching silently — surface the failure instead.
-                self.log("Matching Vocab Tree impossible : vocabulary tree indisponible.")
+                self.log("Vocab Tree matching unavailable: vocabulary tree could not be obtained.")
                 return False
             cmd = [
                 self.colmap_bin, 'vocab_tree_matcher', *common_args,
                 '--VocabTreeMatching.vocab_tree_path', str(vocab_path),
             ]
-            description = "Matching Vocab Tree"
+            description = "Vocab Tree Matching"
         else:
             if matcher != 'exhaustive':
-                self.log(f"Type de matcher inconnu '{matcher}' — repli sur exhaustive_matcher.")
+                self.log(f"Unknown matcher type '{matcher}' — falling back to exhaustive_matcher.")
             cmd = [self.colmap_bin, 'exhaustive_matcher', *common_args]
-            description = "Matching Exhaustif"
+            description = "Exhaustive Matching"
 
-        self.log(f"Strategie de matching : '{matcher}' -> {cmd[1]}")
-        return self.run_command(cmd, description, status_prefix="Comparaison")
+        self.log(f"Matching strategy: '{matcher}' -> {cmd[1]}")
+        return self.run_command(cmd, description, status_prefix="Matching")
 
     def mapper(self, database_path: str, images_dir: str, sparse_dir: Path) -> bool:
         """Exécute la reconstruction 3D (Mapper)."""
         if self.params.use_glomap:
-            self.log("Utilisation de GLOMAP pour la reconstruction...")
+            self.log("Using GLOMAP for reconstruction...")
             cmd = [
                 self.glomap_bin, 'mapper',
                 '--database_path', database_path,
                 '--image_path', images_dir,
                 '--output_path', str(sparse_dir)
             ]
-            return self.run_command(cmd, "Reconstruction 3D (GLOMAP)", status_prefix="Reconstruction GLOMAP")
+            return self.run_command(cmd, "3D reconstruction (GLOMAP)", status_prefix="GLOMAP reconstruction")
         else:
             cmd = [
                 self.colmap_bin, 'mapper',
@@ -775,7 +777,7 @@ class ColmapEngine(BaseEngine):
                 '--Mapper.ba_refine_extra_params', '1' if self.params.ba_refine_extra_params else '0',
                 '--Mapper.min_num_matches', str(self.params.min_num_matches),
             ]
-            return self.run_command(cmd, "Reconstruction 3D (COLMAP)", status_prefix="Reconstruction 3D")
+            return self.run_command(cmd, "3D reconstruction (COLMAP)", status_prefix="3D reconstruction")
 
     def image_undistorter(self, images_dir: str, sparse_dir: str, output_dir: str) -> bool:
         """Exécute l'undistortion des images."""
@@ -788,7 +790,7 @@ class ColmapEngine(BaseEngine):
             '--output_type', 'COLMAP',
             '--max_image_size', str(self.params.max_image_size),
         ]
-        return self.run_command(cmd, "Undistortion des images", status_prefix="Correction optique")
+        return self.run_command(cmd, "Image undistortion", status_prefix="Undistortion")
 
     def create_brush_config(self, output_dir: Path, images_dir: Path, sparse_dir: Path):
         """Génère le fichier de configuration pour Brush."""

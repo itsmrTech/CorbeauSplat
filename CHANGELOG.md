@@ -4,7 +4,7 @@
 
 ### 🐞 Bug Fixes
 - **Matcher selection ignored (Vocab Tree / Sequential)**: `feature_matching()` only special-cased `sequential` and routed *everything else* — including `vocab_tree` — through the `else` branch that ran `exhaustive_matcher`. Selecting "Vocab Tree" silently fell back to exhaustive matching, which is O(N²) (hours on 2000+ image sets) and corrupts camera poses on repetitive structures. `feature_matching()` now maps each `matcher_type` to its real COLMAP subcommand (`exhaustive_matcher` / `sequential_matcher` / `vocab_tree_matcher`) and logs the chosen strategy before execution.
-- **Vocab Tree silent failure**: the `vocab_tree_matcher` needs a pre-trained vocabulary tree `.bin` that was never provided. `_ensure_vocab_tree()` now downloads COLMAP's default 256K-word tree on demand into `engines/` (official COLMAP release, with the demuc.de mirror as fallback) and reuses it across runs. If the tree cannot be obtained, the run fails with a clear error **instead of silently falling back to exhaustive matching**.
+- **Vocab Tree silent failure**: the `vocab_tree_matcher` needs a pre-trained vocabulary tree `.bin` that was never provided. `_ensure_vocab_tree()` now downloads COLMAP's default **faiss-format** 256K-word tree (`vocab_tree_faiss_flickr100K_words256K.bin`, from the official COLMAP release) on demand into `engines/` and reuses it across runs. COLMAP switched its vocab tree format from FLANN to FAISS in May 2025, so the legacy FLANN tree aborts recent COLMAP with `Failed to read faiss index` — the faiss variant is required. If the tree cannot be obtained, the run fails with a clear error **instead of silently falling back to exhaustive matching**.
 
 ## [0.99.5] - 2026-05-13
 
