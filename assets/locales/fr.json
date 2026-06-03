@@ -242,6 +242,8 @@
     "360_check_ai_mask": "Masquer Opérateur (YOLO - Remove Operator)",
     "360_check_ai_skip": "Sauter images avec Opérateur (Skip Frame)",
     "360_check_adaptive": "Intervalle Adaptatif (Mouvement)",
+    "360_check_drop_operator": "Supprimer les faces avec opérateur (retirer l'image)",
+    "360_tip_drop_operator": "Après le masquage IA, supprime chaque face du cube où l'opérateur est détecté, au lieu de la garder masquée. Retire entièrement l'image concernée pour réduire les artefacts.",
     "360_lbl_threshold": "Seuil Mouvement :",
     "360_btn_extract_only": "Lancer Extraction (Standalone)",
     "360_msg_success": "Extraction terminée !",

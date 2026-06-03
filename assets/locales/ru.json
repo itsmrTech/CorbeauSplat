@@ -232,6 +232,8 @@
     "360_check_ai_mask": "Маскировка оператора",
     "360_check_ai_skip": "Пропуск кадров с оператором",
     "360_check_adaptive": "Адаптивный интервал",
+    "360_check_drop_operator": "Drop Operator Faces (remove image)",
+    "360_tip_drop_operator": "After AI masking, delete each cube face where the operator is detected, instead of keeping it masked. Removes the offending image entirely to reduce artifacts.",
     "360_lbl_threshold": "Порог движения:",
     "360_btn_extract_only": "Запустить извлечение",
     "360_msg_success": "Извлечение завершено!",

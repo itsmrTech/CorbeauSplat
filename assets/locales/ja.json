@@ -232,6 +232,8 @@
     "360_check_ai_mask": "オペレーターをマスキング",
     "360_check_ai_skip": "オペレーターを含むフレームをスキップ",
     "360_check_adaptive": "アダプティブな間隔",
+    "360_check_drop_operator": "Drop Operator Faces (remove image)",
+    "360_tip_drop_operator": "After AI masking, delete each cube face where the operator is detected, instead of keeping it masked. Removes the offending image entirely to reduce artifacts.",
     "360_lbl_threshold": "動きのしきい値:",
     "360_btn_extract_only": "抽出を実行",
     "360_msg_success": "抽出完了！",

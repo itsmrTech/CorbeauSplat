@@ -289,6 +289,10 @@ def get_parser():
     p.add_argument("--layout",          default="equirectangular",
                    help="Projection layout (default: equirectangular)")
     p.add_argument("--ai_mask",         action="store_true", help="Enable AI masking")
+    p.add_argument("--drop_operator",   action="store_true",
+                   help="Drop each extracted face where the operator is detected (uses AI masking) instead of masking it")
+    p.add_argument("--operator_drop_threshold", type=float, default=0.005,
+                   help="Min fraction of a face the operator must cover to drop it (default: 0.005)")
     p.add_argument("--ai_skip",         action="store_true", help="Enable AI frame skipping")
     p.add_argument("--adaptive",        action="store_true", help="Motion-adaptive extraction")
     p.add_argument("--motion_threshold", type=float, default=0.3,
@@ -620,6 +624,8 @@ def run_extract360(args):
         "quality":          args.quality,
         "layout":           args.layout,
         "ai_mask":          args.ai_mask,
+        "drop_operator":    args.drop_operator,
+        "operator_drop_threshold": args.operator_drop_threshold,
         "ai_skip":          args.ai_skip,
         "adaptive":         args.adaptive,
         "motion_threshold": args.motion_threshold,

@@ -232,6 +232,8 @@
     "360_check_ai_mask": "遮罩操作员",
     "360_check_ai_skip": "跳过包含操作员的帧",
     "360_check_adaptive": "自适应时间间隔",
+    "360_check_drop_operator": "Drop Operator Faces (remove image)",
+    "360_tip_drop_operator": "After AI masking, delete each cube face where the operator is detected, instead of keeping it masked. Removes the offending image entirely to reduce artifacts.",
     "360_lbl_threshold": "运动阈值:",
     "360_btn_extract_only": "运行提取",
     "360_msg_success": "提取完成！",
