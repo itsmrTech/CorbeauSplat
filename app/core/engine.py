@@ -725,7 +725,7 @@ class ColmapEngine(BaseEngine):
             '--SiftMatching.max_ratio', str(self.params.max_ratio),
             '--SiftMatching.max_distance', str(self.params.max_distance),
             '--SiftMatching.cross_check', '1' if self.params.cross_check else '0',
-            '--SiftMatching.use_gpu', use_gpu,
+            '--FeatureMatching.use_gpu', use_gpu,
             '--FeatureMatching.guided_matching', '1' if self.params.guided_matching else '0',
         ]
         # Run several matching streams on the same GPU so a powerful GPU isn't
@@ -733,7 +733,7 @@ class ColmapEngine(BaseEngine):
         # pure concurrency, not a quality trade-off.
         streams = max(1, int(getattr(self.params, 'match_gpu_streams', 1)))
         if use_gpu == '1' and streams > 1:
-            common_args += ['--SiftMatching.gpu_index', ','.join(['0'] * streams)]
+            common_args += ['--FeatureMatching.gpu_index', ','.join(['0'] * streams)]
 
         if matcher == 'sequential':
             cmd = [
