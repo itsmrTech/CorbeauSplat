@@ -21,6 +21,7 @@ class ColmapParams:
     ba_refine_extra_params: bool = True
     min_num_matches: int = 15
     matcher_type: str = 'exhaustive' # exhaustive, sequential, vocab_tree
+    match_gpu_streams: int = 2 # parallel GPU matching threads (1 = COLMAP default); quality-neutral, raises GPU utilization
     sequential_overlap: int = 30
     undistort_images: bool = False
     use_glomap: bool = False

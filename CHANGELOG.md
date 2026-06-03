@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### ⚡ Performance
+- **Higher device utilization in matching & mapping (no quality change)**: feature matching now runs multiple parallel GPU streams (`SiftMatching.gpu_index`; default 2, configurable in COLMAP Parameters and via `--match_gpu_streams`) so a powerful GPU isn't left idle on a single stream, and match verification + the mapper's bundle adjustment now use **every** logical core (P+E) instead of P-cores only. Same image pairs, thresholds, and results — purely added concurrency. Respects `force_cpu` (disables GPU streaming). The matching log line now reports the CPU-thread and GPU-stream counts in use.
+
 ### ✨ New Features
 - **360 Extractor — "Drop Operator Faces" mode**: a new option (GUI checkbox + CLI `--drop_operator`) that, instead of keeping the operator masked, deletes each extracted cube face where the AI mask detects the operator. It reuses the existing "Mask Operator" (YOLO) step to locate the operator, then removes the offending face image **and** its mask entirely — cutting the ghosting/artifacts that masked-but-retained operator regions leave in the splat. A configurable coverage threshold (`--operator_drop_threshold`, default 0.5%) guards against tiny false positives, and the mask analysis is robust to mask inversion and alpha-encoded masks.
 

@@ -112,7 +112,15 @@ class ParamsTab(QWidget):
         self.guided_match_check.setEnabled(False)
         self.lbl_guided = QLabel(tr("check_guided"))
         match_layout.addRow(self.lbl_guided, self.guided_match_check)
-        
+
+        self.gpu_streams_spin = QSpinBox()
+        self.gpu_streams_spin.setRange(1, 8)
+        self.gpu_streams_spin.setValue(2)
+        self.gpu_streams_spin.setMinimumWidth(100)
+        self.gpu_streams_spin.setToolTip(tr("tip_gpu_streams"))
+        self.lbl_gpu_streams = QLabel(tr("lbl_gpu_streams"))
+        match_layout.addRow(self.lbl_gpu_streams, self.gpu_streams_spin)
+
         self.match_group.setLayout(match_layout)
         scroll_layout.addWidget(self.match_group)
         
@@ -185,6 +193,7 @@ class ParamsTab(QWidget):
             ba_refine_extra_params=self.refine_extra_check.isChecked(),
             min_num_matches=self.min_matches_spin.value(),
             matcher_type=self.matcher_type_combo.currentText(),
+            match_gpu_streams=self.gpu_streams_spin.value(),
             use_glomap=self.use_glomap_check.isChecked(),
             undistort_images=False, # Géré par ConfigTab pour l'instant, ou on peut le passer ici si on veut
         )
@@ -208,6 +217,7 @@ class ParamsTab(QWidget):
         self.refine_extra_check.setChecked(params.ba_refine_extra_params)
         self.min_matches_spin.setValue(params.min_num_matches)
         self.matcher_type_combo.setCurrentText(params.matcher_type)
+        self.gpu_streams_spin.setValue(getattr(params, "match_gpu_streams", 2))
         self.use_glomap_check.setChecked(params.use_glomap)
         # undistort est dans config tab
 
@@ -237,6 +247,8 @@ class ParamsTab(QWidget):
         self.lbl_max_dist.setText(tr("lbl_max_dist"))
         self.lbl_cross.setText(tr("check_cross"))
         self.lbl_guided.setText(tr("check_guided"))
+        self.lbl_gpu_streams.setText(tr("lbl_gpu_streams"))
+        self.gpu_streams_spin.setToolTip(tr("tip_gpu_streams"))
         
         self.mapper_group.setTitle(tr("group_mapper"))
         self.lbl_min_model.setText(tr("lbl_min_model"))

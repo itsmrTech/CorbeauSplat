@@ -150,6 +150,8 @@ def get_parser():
     p.add_argument("--use_glomap", action="store_true", help="Use Glomap instead of the COLMAP mapper")
     p.add_argument("--matcher_type", choices=["exhaustive","sequential","vocab_tree"], default="exhaustive",
                    help="Matching strategy (default: exhaustive)")
+    p.add_argument("--match_gpu_streams", type=int, default=2,
+                   help="Parallel GPU matching streams; raises GPU use, same quality (default: 2)")
     p.add_argument("--max_image_size", type=int, default=3200,
                    help="Max image resolution for COLMAP (default: 3200)")
     # Brush
@@ -186,6 +188,8 @@ def get_parser():
     # Feature matching
     p.add_argument("--matcher_type", choices=["exhaustive","sequential","vocab_tree"], default="exhaustive",
                    help="Matching strategy (default: exhaustive)")
+    p.add_argument("--match_gpu_streams", type=int, default=2,
+                   help="Parallel GPU matching streams; raises GPU use, same quality (default: 2)")
     p.add_argument("--max_ratio",    type=float, default=0.8,  help="Max Lowe ratio (default: 0.8)")
     p.add_argument("--max_distance", type=float, default=0.7,  help="Max distance (default: 0.7)")
     p.add_argument("--no_cross_check", action="store_true", help="Disable cross-check")
@@ -323,6 +327,7 @@ def run_colmap(args):
         ba_refine_extra_params=not args.no_refine_extra,
         min_num_matches=args.min_num_matches,
         matcher_type=args.matcher_type,
+        match_gpu_streams=args.match_gpu_streams,
         undistort_images=args.undistort,
         use_glomap=args.use_glomap,
     )
@@ -671,6 +676,7 @@ def run_pipeline(args):
     colmap_params = ColmapParams(
         camera_model=args.camera_model,
         matcher_type=args.matcher_type,
+        match_gpu_streams=args.match_gpu_streams,
         max_image_size=args.max_image_size,
         undistort_images=args.undistort,
         use_glomap=args.use_glomap,

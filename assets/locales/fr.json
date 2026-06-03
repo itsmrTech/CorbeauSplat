@@ -49,6 +49,8 @@
     "check_domain": "Domain pooling :",
     "group_match": "Feature Matching",
     "lbl_match_type": "Type de matching :",
+    "lbl_gpu_streams": "Flux GPU (matching) :",
+    "tip_gpu_streams": "Nombre de flux de matching parallèles sur le GPU. Une valeur plus élevée exploite davantage le GPU (plus rapide sur les GPU puissants) sans changer la qualité du matching. Réduisez-la en cas de limite mémoire. 1 = valeur par défaut de COLMAP.",
     "lbl_max_ratio": "Max ratio :",
     "lbl_max_dist": "Max distance :",
     "check_cross": "Cross check :",

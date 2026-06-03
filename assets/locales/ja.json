@@ -39,6 +39,8 @@
     "check_domain": "ドメインプーリング:",
     "group_match": "特徴マッチング",
     "lbl_match_type": "マッチングタイプ:",
+    "lbl_gpu_streams": "GPU Match Streams:",
+    "tip_gpu_streams": "Number of parallel matching streams on the GPU. Higher values use more of the GPU (faster on powerful GPUs) without changing match quality. Lower it if you hit memory limits. 1 = COLMAP default.",
     "lbl_max_ratio": "最大比率:",
     "lbl_max_dist": "最大距離:",
     "check_cross": "クロスチェック:",

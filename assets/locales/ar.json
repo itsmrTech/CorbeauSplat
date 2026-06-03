@@ -39,6 +39,8 @@
     "check_domain": "تجميع النطاقات:",
     "group_match": "مطابقة المعالم",
     "lbl_match_type": "نوع المطابقة:",
+    "lbl_gpu_streams": "GPU Match Streams:",
+    "tip_gpu_streams": "Number of parallel matching streams on the GPU. Higher values use more of the GPU (faster on powerful GPUs) without changing match quality. Lower it if you hit memory limits. 1 = COLMAP default.",
     "lbl_max_ratio": "أقصى نسبة:",
     "lbl_max_dist": "أقصى مسافة:",
     "check_cross": "تقاطع:",

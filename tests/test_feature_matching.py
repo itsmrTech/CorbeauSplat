@@ -17,9 +17,9 @@ from app.core.engine import ColmapEngine
 from app.core.params import ColmapParams
 
 
-def _make_engine(matcher_type):
+def _make_engine(matcher_type, **param_kwargs):
     """Build an engine whose run_command is stubbed to capture the command."""
-    params = ColmapParams(matcher_type=matcher_type)
+    params = ColmapParams(matcher_type=matcher_type, **param_kwargs)
     engine = ColmapEngine(
         params, "/tmp/in", "/tmp/out", "images", 5, "proj",
         logger_callback=lambda _msg: None,
@@ -108,6 +108,38 @@ def test_ensure_vocab_tree_returns_existing_file(tmp_path, monkeypatch):
 
     engine, _ = _make_engine("vocab_tree")
     assert engine._ensure_vocab_tree() == vocab
+
+
+def test_match_gpu_streams_adds_parallel_gpu_index():
+    """Multiple streams -> repeated GPU index so the GPU runs them concurrently."""
+    engine, captured = _make_engine("exhaustive", match_gpu_streams=3)
+    engine.feature_matching("/tmp/db.db")
+    cmd = captured["cmd"]
+    assert cmd[cmd.index("--SiftMatching.use_gpu") + 1] == "1"
+    assert cmd[cmd.index("--SiftMatching.gpu_index") + 1] == "0,0,0"
+
+
+def test_single_stream_omits_gpu_index():
+    engine, captured = _make_engine("exhaustive", match_gpu_streams=1)
+    engine.feature_matching("/tmp/db.db")
+    cmd = captured["cmd"]
+    assert "--SiftMatching.gpu_index" not in cmd
+    assert cmd[cmd.index("--SiftMatching.use_gpu") + 1] == "1"
+
+
+def test_force_cpu_disables_gpu_and_streams():
+    engine, captured = _make_engine("exhaustive", match_gpu_streams=4, force_cpu=True)
+    engine.feature_matching("/tmp/db.db")
+    cmd = captured["cmd"]
+    assert cmd[cmd.index("--SiftMatching.use_gpu") + 1] == "0"
+    assert "--SiftMatching.gpu_index" not in cmd
+
+
+def test_matching_uses_all_cores():
+    engine, captured = _make_engine("exhaustive")
+    engine.feature_matching("/tmp/db.db")
+    cmd = captured["cmd"]
+    assert cmd[cmd.index("--FeatureMatching.num_threads") + 1] == str(engine.total_threads)
 
 
 if __name__ == "__main__":

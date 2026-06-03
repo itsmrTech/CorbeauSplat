@@ -9,7 +9,7 @@ import sqlite3
 from pathlib import Path
 from typing import Tuple, Any, Optional, Callable
 from .base_engine import BaseEngine
-from .system import is_apple_silicon, get_optimal_threads, resolve_binary, resolve_project_root
+from .system import is_apple_silicon, get_optimal_threads, get_total_threads, resolve_binary, resolve_project_root
 from .i18n import tr
 
 _IMAGE_EXTS = {'.jpg', '.jpeg', '.png'}
@@ -52,6 +52,9 @@ class ColmapEngine(BaseEngine):
         self.project_name = project_name
         self.is_silicon = is_apple_silicon()
         self.num_threads = get_optimal_threads()
+        # Matching verification and the mapper's bundle adjustment scale past the
+        # P-cores, so they use every logical core instead of leaving half idle.
+        self.total_threads = get_total_threads()
         self._current_process = None
         self.progress = progress_callback if progress_callback else lambda x: None
         self.status = status_callback if status_callback else lambda x: None
@@ -715,14 +718,22 @@ class ColmapEngine(BaseEngine):
     def feature_matching(self, database_path: str) -> bool:
         """Exécute le matching des features selon la strategie choisie."""
         matcher = self.params.matcher_type
+        use_gpu = '0' if getattr(self.params, 'force_cpu', False) else '1'
         common_args = [
             '--database_path', database_path,
-            '--FeatureMatching.num_threads', str(self.num_threads),
+            '--FeatureMatching.num_threads', str(self.total_threads),
             '--SiftMatching.max_ratio', str(self.params.max_ratio),
             '--SiftMatching.max_distance', str(self.params.max_distance),
             '--SiftMatching.cross_check', '1' if self.params.cross_check else '0',
+            '--SiftMatching.use_gpu', use_gpu,
             '--FeatureMatching.guided_matching', '1' if self.params.guided_matching else '0',
         ]
+        # Run several matching streams on the same GPU so a powerful GPU isn't
+        # left idle on a single stream. Identical matches/thresholds — this is
+        # pure concurrency, not a quality trade-off.
+        streams = max(1, int(getattr(self.params, 'match_gpu_streams', 1)))
+        if use_gpu == '1' and streams > 1:
+            common_args += ['--SiftMatching.gpu_index', ','.join(['0'] * streams)]
 
         if matcher == 'sequential':
             cmd = [
@@ -749,7 +760,8 @@ class ColmapEngine(BaseEngine):
             cmd = [self.colmap_bin, 'exhaustive_matcher', *common_args]
             description = "Exhaustive Matching"
 
-        self.log(f"Matching strategy: '{matcher}' -> {cmd[1]}")
+        self.log(f"Matching strategy: '{matcher}' -> {cmd[1]} "
+                 f"({self.total_threads} CPU threads, {streams if use_gpu == '1' else 0} GPU stream(s))")
         return self.run_command(cmd, description, status_prefix="Matching")
 
     def mapper(self, database_path: str, images_dir: str, sparse_dir: Path) -> bool:
@@ -769,7 +781,7 @@ class ColmapEngine(BaseEngine):
                 '--database_path', database_path,
                 '--image_path', images_dir,
                 '--output_path', str(sparse_dir),
-                '--Mapper.num_threads', str(self.num_threads),
+                '--Mapper.num_threads', str(self.total_threads),
                 '--Mapper.min_model_size', str(self.params.min_model_size),
                 '--Mapper.multiple_models', '1' if self.params.multiple_models else '0',
                 '--Mapper.ba_refine_focal_length', '1' if self.params.ba_refine_focal_length else '0',

@@ -34,6 +34,16 @@ def get_optimal_threads():
         return max(1, cpu_count // 2)
     return os.cpu_count() or 4
 
+
+def get_total_threads():
+    """All logical cores (P+E on Apple Silicon).
+
+    Used for thread-parallel CPU stages that scale well past the P-cores —
+    feature-match geometric verification and the mapper's bundle adjustment —
+    so a big chip isn't left half-idle. Quality is unaffected; only throughput.
+    """
+    return os.cpu_count() or 4
+
 def resolve_binary(name):
     """
     Résoud le chemin d'un binaire en priorisant le dossier 'engines' local.
